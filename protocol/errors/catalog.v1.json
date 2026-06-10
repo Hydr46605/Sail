@@ -1,0 +1,68 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "errors": [
+    {
+      "code": "premium_name_required",
+      "audience": "player",
+      "http_status": 409,
+      "retryable": false,
+      "message": "This name belongs to a Minecraft Java account. Join with the official account."
+    },
+    {
+      "code": "name_already_claimed",
+      "audience": "player",
+      "http_status": 409,
+      "retryable": false,
+      "message": "This name is already registered through Sail."
+    },
+    {
+      "code": "session_expired",
+      "audience": "player",
+      "http_status": 410,
+      "retryable": true,
+      "message": "Your Sail login code expired. Join again to get a new code."
+    },
+    {
+      "code": "registry_unavailable",
+      "audience": "player",
+      "http_status": 503,
+      "retryable": true,
+      "message": "Sail could not verify your identity right now. Try again later."
+    },
+    {
+      "code": "server_not_found",
+      "audience": "operator",
+      "http_status": 404,
+      "retryable": false,
+      "message": "The requested server is not registered with this Sail registry."
+    },
+    {
+      "code": "session_reuse_denied",
+      "audience": "player",
+      "http_status": 403,
+      "retryable": true,
+      "message": "Your Sail session cannot be reused on this server. Join again to complete a fresh login."
+    },
+    {
+      "code": "backend_not_safe",
+      "audience": "admin",
+      "http_status": 500,
+      "retryable": false,
+      "message": "Backend forwarding or network exposure is misconfigured."
+    },
+    {
+      "code": "signature_invalid",
+      "audience": "developer",
+      "http_status": 401,
+      "retryable": false,
+      "message": "The signed Sail claim or session token could not be verified."
+    },
+    {
+      "code": "issuer_untrusted",
+      "audience": "admin",
+      "http_status": 403,
+      "retryable": false,
+      "message": "The claim issuer is not trusted by this server."
+    }
+  ]
+}

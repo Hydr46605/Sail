@@ -1,0 +1,557 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sail Registry API",
+    "version": "sail-protocol-v1",
+    "summary": "Baseline registry API for Sail self-hosted MVP and future federation.",
+    "description": "Sail Registry API v1 defines discovery, registered server records, Minecraft auth challenges, session verification, and console profile/session management for the current self-hosted registry surface. Federation, public name lookup, and signed claim verification are deferred surfaces."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8787",
+      "description": "Local self-hosted development registry"
+    },
+    {
+      "url": "https://api.sailmc.net",
+      "description": "Future Sail Global registry"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Discovery"
+    },
+    {
+      "name": "Servers"
+    },
+    {
+      "name": "Minecraft"
+    },
+    {
+      "name": "Sessions"
+    },
+    {
+      "name": "Console"
+    },
+    {
+      "name": "Federation"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Sail session token"
+      }
+    }
+  },
+  "paths": {
+    "/.well-known/sail-registry.json": {
+      "get": {
+        "tags": ["Discovery"],
+        "operationId": "getRegistryDiscovery",
+        "responses": {
+          "200": {
+            "description": "Registry discovery metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/registry-discovery.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/jwks.json": {
+      "get": {
+        "tags": ["Discovery"],
+        "operationId": "getJwks",
+        "responses": {
+          "200": {
+            "description": "Public signing keys for Sail claim and session verification.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/jwks.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/servers/{server_id}": {
+      "get": {
+        "tags": ["Servers"],
+        "operationId": "getServer",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registered Minecraft server record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/server.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Server is not registered with this registry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/minecraft/auth-challenges": {
+      "post": {
+        "tags": ["Minecraft"],
+        "operationId": "createMinecraftAuthChallenge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["server_id", "username", "connection_id", "mode"],
+                "properties": {
+                  "server_id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 16
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["kick", "limbo", "hybrid"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Challenge created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/auth-challenge-create.v1.schema.json"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Name cannot be claimed locally.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Premium-name authority is unavailable, so local registration fails closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/minecraft/auth-challenges/{challenge_id}": {
+      "get": {
+        "tags": ["Minecraft"],
+        "operationId": "getMinecraftAuthChallenge",
+        "parameters": [
+          {
+            "name": "challenge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^ch_[a-zA-Z0-9_-]{12,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current auth challenge state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/auth-challenge-status.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/minecraft/auth-challenges/{challenge_id}/oauth-completions": {
+      "post": {
+        "tags": ["Minecraft"],
+        "operationId": "completeMinecraftAuthChallengeWithOAuth",
+        "parameters": [
+          {
+            "name": "challenge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^ch_[a-zA-Z0-9_-]{12,96}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/oauth-completion.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Challenge completed and Minecraft login identity issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/auth-challenge-status.v1.schema.json"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Requested local name is already claimed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Challenge expired before OAuth completion.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/minecraft/sessions/verify": {
+      "post": {
+        "tags": ["Sessions"],
+        "operationId": "verifyMinecraftSession",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/session-verification.v1.schema.json#/$defs/request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session token is active for the requested server context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/session-verification.v1.schema.json"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token signature or claims are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session token is active but cannot be reused for the requested server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested server is not registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/console/me": {
+      "get": {
+        "tags": ["Console"],
+        "operationId": "getConsoleProfile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Console profile for the authenticated Sail session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/console-profile.v1.schema.json"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session token is valid but cannot access console state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Session token no longer has an active console profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/console/auth-challenges": {
+      "post": {
+        "tags": ["Console"],
+        "operationId": "createConsoleAuthChallenge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["username"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 16,
+                    "pattern": "^[A-Za-z0-9_]{3,16}$"
+                  },
+                  "server_id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Console-originated OAuth challenge created for a Minecraft name claim.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/auth-challenge-create.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested server is not registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Name cannot be claimed locally.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Premium-name authority is unavailable, so local registration fails closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/console/sessions/{session_id}/revoke": {
+      "post": {
+        "tags": ["Console"],
+        "operationId": "revokeConsoleSession",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^sess_[a-zA-Z0-9_-]{12,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Console session revocation accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["protocol_version", "session_id", "status", "revoked_at"],
+                  "properties": {
+                    "protocol_version": {
+                      "const": "sail-protocol-v1"
+                    },
+                    "session_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "revoked"
+                    },
+                    "revoked_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session token cannot revoke the requested session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested session was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Requested session can no longer be revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

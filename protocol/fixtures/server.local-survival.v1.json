@@ -1,0 +1,12 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "registry_id": "sail-local",
+  "server_id": "local-survival",
+  "display_name": "Local Survival",
+  "registry_mode": "self_hosted",
+  "allowed_claim_types": ["LOCAL_SOFT"],
+  "session_reuse_policy": "same_registry",
+  "privacy_mode": "minimal",
+  "status": "active",
+  "public_listing": false
+}

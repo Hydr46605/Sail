@@ -1,0 +1,58 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "account": {
+    "account_id": "acct_local0123456789",
+    "display_name": "Example",
+    "status": "active",
+    "risk_level": "low",
+    "linked_providers": [
+      {
+        "provider": "discord",
+        "provider_username": "example",
+        "created_at": "2026-06-08T10:00:00Z",
+        "last_used_at": "2026-06-08T10:05:00Z"
+      }
+    ]
+  },
+  "names": [
+    {
+      "name_claim_id": "claim_local0123456789",
+      "minecraft_identity_id": "mcid_local0123456789",
+      "canonical_name": "example",
+      "display_name": "Example",
+      "claim_type": "LOCAL_SOFT",
+      "identity_type": "SAIL_LOCAL",
+      "minecraft_uuid": "00000000-0000-4000-8000-000000000001",
+      "issuer_registry_id": "sail-local",
+      "status": "active",
+      "created_at": "2026-06-08T10:01:00Z"
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "sess_local0123456789",
+      "server_id": "local-survival",
+      "server_display_name": "Local Survival",
+      "status": "completed",
+      "current": true,
+      "created_at": "2026-06-08T10:02:00Z",
+      "completed_at": "2026-06-08T10:03:00Z",
+      "expires_at": "2026-06-08T18:02:00Z",
+      "revoked_at": null
+    }
+  ],
+  "trusted_servers": [
+    {
+      "protocol_version": "sail-protocol-v1",
+      "registry_id": "sail-local",
+      "server_id": "local-survival",
+      "display_name": "Local Survival",
+      "registry_mode": "self_hosted",
+      "allowed_claim_types": ["LOCAL_SOFT"],
+      "session_reuse_policy": "same_registry",
+      "privacy_mode": "minimal",
+      "status": "active",
+      "public_listing": false
+    }
+  ]
+}

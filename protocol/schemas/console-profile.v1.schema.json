@@ -1,0 +1,106 @@
+{
+  "$id": "https://protocol.sailmc.net/schemas/console-profile.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sail Console Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "account", "names", "sessions", "trusted_servers"],
+  "properties": {
+    "protocol_version": { "const": "sail-protocol-v1" },
+    "account": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account_id", "display_name", "status", "risk_level", "linked_providers"],
+      "properties": {
+        "account_id": { "type": "string", "pattern": "^acct_[A-Za-z0-9_-]{8,96}$" },
+        "display_name": { "type": ["string", "null"], "minLength": 1, "maxLength": 96 },
+        "status": { "type": "string", "enum": ["active", "suspended", "recovery_locked", "deleted"] },
+        "risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
+        "linked_providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["provider", "provider_username", "created_at", "last_used_at"],
+            "properties": {
+              "provider": { "type": "string", "minLength": 1, "maxLength": 32 },
+              "provider_username": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+              "created_at": { "type": "string", "format": "date-time" },
+              "last_used_at": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "names": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name_claim_id",
+          "minecraft_identity_id",
+          "canonical_name",
+          "display_name",
+          "claim_type",
+          "identity_type",
+          "minecraft_uuid",
+          "issuer_registry_id",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "name_claim_id": { "type": "string", "pattern": "^claim_[A-Za-z0-9_-]{8,96}$" },
+          "minecraft_identity_id": { "type": "string", "pattern": "^mcid_[A-Za-z0-9_-]{8,96}$" },
+          "canonical_name": { "type": "string", "pattern": "^[a-z0-9_]{3,16}$" },
+          "display_name": { "type": "string", "minLength": 3, "maxLength": 16 },
+          "claim_type": {
+            "type": "string",
+            "enum": ["MINECRAFT_VERIFIED", "SAIL_GLOBAL", "FEDERATED_TRUSTED", "LOCAL_SOFT", "SOCIAL_ONLY"]
+          },
+          "identity_type": { "type": "string", "enum": ["MOJANG_PREMIUM", "SAIL_LOCAL", "FEDERATED"] },
+          "minecraft_uuid": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "issuer_registry_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "status": { "type": "string", "enum": ["active", "displaced_by_minecraft", "renamed", "suspended", "expired"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "server_id",
+          "server_display_name",
+          "status",
+          "current",
+          "created_at",
+          "completed_at",
+          "expires_at",
+          "revoked_at"
+        ],
+        "properties": {
+          "session_id": { "type": "string", "pattern": "^sess_[A-Za-z0-9_-]{8,96}$" },
+          "server_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$" },
+          "server_display_name": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "status": { "type": "string", "enum": ["pending", "completed", "expired", "revoked", "denied"] },
+          "current": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "completed_at": { "type": ["string", "null"], "format": "date-time" },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "revoked_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "trusted_servers": {
+      "type": "array",
+      "items": { "$ref": "https://protocol.sailmc.net/schemas/server.v1.schema.json" }
+    }
+  }
+}

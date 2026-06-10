@@ -1,0 +1,14 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "canonical_name": "example",
+  "display_name": "Example",
+  "status": "claimed",
+  "claim_type": "LOCAL_SOFT",
+  "identity_type": "SAIL_LOCAL",
+  "issuer_registry_id": "my-network",
+  "minecraft_uuid": "00000000-0000-4000-8000-000000000001",
+  "premium_name": false,
+  "priority": 40,
+  "expires_at": null
+}
+

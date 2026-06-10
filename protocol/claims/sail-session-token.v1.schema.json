@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/claims/sail-session-token.v1.schema.json",
+  "title": "Sail Session Token v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protected_header", "claims"],
+  "properties": {
+    "protected_header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "kid", "typ"],
+      "properties": {
+        "alg": {
+          "const": "ES256"
+        },
+        "kid": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 128
+        },
+        "typ": {
+          "const": "JWT"
+        }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol_version",
+        "iss",
+        "sub",
+        "session_id",
+        "account_id",
+        "minecraft_identity_id",
+        "name_claim_id",
+        "canonical_name",
+        "minecraft_uuid",
+        "claim_type",
+        "identity_type",
+        "iat",
+        "exp",
+        "scope",
+        "server_id"
+      ],
+      "properties": {
+        "protocol_version": {
+          "const": "sail-protocol-v1"
+        },
+        "iss": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+        },
+        "sub": {
+          "type": "string",
+          "pattern": "^acct_[A-Za-z0-9_-]{8,96}$"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^sess_[A-Za-z0-9_-]{8,96}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^acct_[A-Za-z0-9_-]{8,96}$"
+        },
+        "minecraft_identity_id": {
+          "type": "string",
+          "pattern": "^mcid_[A-Za-z0-9_-]{8,96}$"
+        },
+        "name_claim_id": {
+          "type": "string",
+          "pattern": "^claim_[A-Za-z0-9_-]{8,96}$"
+        },
+        "canonical_name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{3,16}$"
+        },
+        "minecraft_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "claim_type": {
+          "type": "string",
+          "enum": ["MINECRAFT_VERIFIED", "SAIL_GLOBAL", "FEDERATED_TRUSTED", "LOCAL_SOFT"]
+        },
+        "identity_type": {
+          "type": "string",
+          "enum": ["MOJANG_PREMIUM", "SAIL_LOCAL", "FEDERATED"]
+        },
+        "iat": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "const": "minecraft_login"
+        },
+        "server_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    }
+  }
+}

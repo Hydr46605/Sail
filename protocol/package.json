@@ -1,0 +1,14 @@
+{
+  "name": "@sail/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Versioned Sail protocol contracts and fixtures.",
+  "type": "module",
+  "scripts": {},
+  "devDependencies": {
+    "@sinclair/typebox": "^0.34.41",
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  }
+}

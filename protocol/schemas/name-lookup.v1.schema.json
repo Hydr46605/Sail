@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/name-lookup.v1.schema.json",
+  "title": "Sail Name Lookup v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "canonical_name",
+    "display_name",
+    "status",
+    "claim_type",
+    "identity_type",
+    "issuer_registry_id",
+    "minecraft_uuid",
+    "premium_name",
+    "priority"
+  ],
+  "properties": {
+    "protocol_version": {
+      "const": "sail-protocol-v1"
+    },
+    "canonical_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]{3,16}$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 16
+    },
+    "status": {
+      "type": "string",
+      "enum": ["claimed", "unclaimed", "premium_reserved", "displaced", "suspended"]
+    },
+    "claim_type": {
+      "type": "string",
+      "enum": ["MINECRAFT_VERIFIED", "SAIL_GLOBAL", "FEDERATED_TRUSTED", "LOCAL_SOFT", "SOCIAL_ONLY"]
+    },
+    "identity_type": {
+      "type": "string",
+      "enum": ["MOJANG_PREMIUM", "SAIL_LOCAL", "FEDERATED"]
+    },
+    "issuer_registry_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+    },
+    "minecraft_uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "premium_name": {
+      "type": "boolean"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "expires_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}
+

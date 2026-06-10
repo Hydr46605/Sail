@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/oauth-completion.v1.schema.json",
+  "title": "Sail OAuth Completion v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "provider_subject"],
+  "properties": {
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{1,31}$"
+    },
+    "provider_subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "provider_username": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}
+

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/auth-challenge-status.v1.schema.json",
+  "title": "Sail Auth Challenge Status v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "challenge_id", "status", "expires_at"],
+  "properties": {
+    "protocol_version": {
+      "const": "sail-protocol-v1"
+    },
+    "challenge_id": {
+      "type": "string",
+      "pattern": "^ch_[A-Za-z0-9_-]{12,96}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "completed", "expired", "revoked", "denied"]
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_id",
+        "minecraft_identity_id",
+        "name_claim_id",
+        "canonical_name",
+        "display_name",
+        "minecraft_uuid",
+        "claim_type",
+        "identity_type"
+      ],
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^acct_[A-Za-z0-9_-]{8,96}$"
+        },
+        "minecraft_identity_id": {
+          "type": "string",
+          "pattern": "^mcid_[A-Za-z0-9_-]{8,96}$"
+        },
+        "name_claim_id": {
+          "type": "string",
+          "pattern": "^claim_[A-Za-z0-9_-]{8,96}$"
+        },
+        "canonical_name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{3,16}$"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16
+        },
+        "minecraft_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "claim_type": {
+          "type": "string",
+          "enum": ["MINECRAFT_VERIFIED", "SAIL_GLOBAL", "FEDERATED_TRUSTED", "LOCAL_SOFT"]
+        },
+        "identity_type": {
+          "type": "string",
+          "enum": ["MOJANG_PREMIUM", "SAIL_LOCAL", "FEDERATED"]
+        },
+        "session_token": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

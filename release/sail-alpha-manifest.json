@@ -1,0 +1,45 @@
+{
+  "name": "Sail",
+  "channel": "alpha",
+  "version": "0.1.0",
+  "label": "0.1.0-alpha",
+  "protocol_version": "sail-protocol-v1",
+  "homepage": "https://sailmc.net",
+  "console_url": "https://sailmc.net/console",
+  "api_url": "https://api.sailmc.net",
+  "repository": "https://github.com/BerylLabs/Sail",
+  "artifacts": [
+    {
+      "id": "gateway",
+      "name": "Sail Gateway",
+      "kind": "velocity-plugin",
+      "source": "minecraft/gateway/build/libs/gateway-0.1.0-SNAPSHOT.jar",
+      "file": "sail-gateway-0.1.0-alpha.jar",
+      "description": "Velocity enforcement plugin for Sail login decisions."
+    },
+    {
+      "id": "companion",
+      "name": "Sail Companion",
+      "kind": "paper-plugin",
+      "source": "minecraft/companion/build/libs/companion-0.1.0-SNAPSHOT.jar",
+      "file": "sail-companion-0.1.0-alpha.jar",
+      "description": "Paper diagnostics plugin for Sail identity visibility."
+    },
+    {
+      "id": "registry-openapi",
+      "name": "Sail Registry OpenAPI",
+      "kind": "api-contract",
+      "source": "protocol/openapi/sail-registry.v1.openapi.json",
+      "file": "sail-registry.v1.openapi.json",
+      "description": "Registry API contract for the alpha protocol."
+    },
+    {
+      "id": "protocol-version",
+      "name": "Sail Protocol Version",
+      "kind": "protocol-metadata",
+      "source": "protocol/version.json",
+      "file": "sail-version.json",
+      "description": "Version metadata for Sail alpha components."
+    }
+  ]
+}

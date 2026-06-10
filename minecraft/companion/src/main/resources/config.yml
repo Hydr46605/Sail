@@ -1,0 +1,5 @@
+sail:
+  companion:
+    warn-on-missing-identity: true
+    warn-on-direct-join-risk: true
+    command-permission: "sail.companion.admin"

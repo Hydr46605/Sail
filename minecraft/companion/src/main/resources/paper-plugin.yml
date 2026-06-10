@@ -1,0 +1,13 @@
+name: SailCompanion
+version: 0.1.0-SNAPSHOT
+main: net.sailmc.companion.SailCompanionPlugin
+api-version: "1.21"
+commands:
+  sailpaper:
+    description: Sail companion diagnostics command.
+    aliases:
+      - sailcompanion
+    permission: sail.companion.admin
+permissions:
+  sail.companion.admin:
+    default: op

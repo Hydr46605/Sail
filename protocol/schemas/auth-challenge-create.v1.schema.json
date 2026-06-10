@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/auth-challenge-create.v1.schema.json",
+  "title": "Sail Auth Challenge Created v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "challenge_id",
+    "status",
+    "server_id",
+    "requested_name",
+    "mode",
+    "code",
+    "auth_url",
+    "expires_at"
+  ],
+  "properties": {
+    "protocol_version": {
+      "const": "sail-protocol-v1"
+    },
+    "challenge_id": {
+      "type": "string",
+      "pattern": "^ch_[A-Za-z0-9_-]{12,96}$"
+    },
+    "status": {
+      "const": "pending"
+    },
+    "server_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+    },
+    "requested_name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 16
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["kick", "limbo", "hybrid"]
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{4}-[A-Z0-9]{4}$"
+    },
+    "auth_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

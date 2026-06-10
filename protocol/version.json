@@ -1,0 +1,12 @@
+{
+  "product": "sail",
+  "release_channel": "alpha",
+  "sail_version": "0.1.0",
+  "protocol_version": "sail-protocol-v1",
+  "components": {
+    "registry": "0.1.0",
+    "console": "0.1.0",
+    "gateway": "0.1.0-SNAPSHOT",
+    "companion": "0.1.0-SNAPSHOT"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/jwks.v1.schema.json",
+  "title": "Sail JWKS v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["keys"],
+  "properties": {
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kty", "kid", "use", "alg", "crv", "x", "y"],
+        "properties": {
+          "kty": {
+            "const": "EC"
+          },
+          "kid": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 128
+          },
+          "use": {
+            "const": "sig"
+          },
+          "alg": {
+            "const": "ES256"
+          },
+          "crv": {
+            "const": "P-256"
+          },
+          "x": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{32,96}$"
+          },
+          "y": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{32,96}$"
+          }
+        }
+      }
+    }
+  }
+}
+

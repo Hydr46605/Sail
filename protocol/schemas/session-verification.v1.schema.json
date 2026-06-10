@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/session-verification.v1.schema.json",
+  "title": "Sail Session Verification v1",
+  "$ref": "#/$defs/response",
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_id", "session_token"],
+      "properties": {
+        "protocol_version": {
+          "const": "sail-protocol-v1"
+        },
+        "server_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+        },
+        "session_token": {
+          "type": "string",
+          "minLength": 32
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol_version",
+        "session_id",
+        "status",
+        "canonical_name",
+        "minecraft_uuid",
+        "server_id",
+        "issuer_server_id",
+        "session_reuse_policy"
+      ],
+      "properties": {
+        "protocol_version": {
+          "const": "sail-protocol-v1"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^sess_[A-Za-z0-9_-]{8,96}$"
+        },
+        "status": {
+          "const": "active"
+        },
+        "canonical_name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{3,16}$"
+        },
+        "minecraft_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "server_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+        },
+        "issuer_server_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+        },
+        "session_reuse_policy": {
+          "type": "string",
+          "enum": ["off", "same_registry", "allowlisted_servers", "global_trusted"]
+        }
+      }
+    }
+  }
+}

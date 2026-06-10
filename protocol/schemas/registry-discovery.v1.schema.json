@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.sailmc.net/schemas/registry-discovery.v1.schema.json",
+  "title": "Sail Registry Discovery v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "registry_id",
+    "name",
+    "api_url",
+    "jwks_url",
+    "auth_url",
+    "terms_url",
+    "privacy_url",
+    "trust_status",
+    "public_key_pinning"
+  ],
+  "properties": {
+    "protocol_version": {
+      "const": "sail-protocol-v1"
+    },
+    "registry_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96
+    },
+    "api_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "jwks_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "auth_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "terms_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "privacy_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "trust_status": {
+      "type": "string",
+      "enum": ["global", "self_hosted", "trusted_by_admin", "unverified"]
+    },
+    "public_key_pinning": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "registry_id": "sail-global",
+  "name": "Sail Global",
+  "api_url": "https://api.sailmc.net",
+  "jwks_url": "https://api.sailmc.net/.well-known/jwks.json",
+  "auth_url": "https://sailmc.net/auth/minecraft",
+  "terms_url": "https://sailmc.net/terms",
+  "privacy_url": "https://sailmc.net/privacy",
+  "trust_status": "global",
+  "public_key_pinning": true
+}

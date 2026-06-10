@@ -1,0 +1,25 @@
+{
+  "protected_header": {
+    "alg": "ES256",
+    "kid": "dev-es256-2026-06",
+    "typ": "JWT"
+  },
+  "claims": {
+    "protocol_version": "sail-protocol-v1",
+    "iss": "my-network",
+    "sub": "acct_local_0123456789abcdef",
+    "session_id": "sess_local_0123456789abcdef",
+    "account_id": "acct_local_0123456789abcdef",
+    "minecraft_identity_id": "mcid_local_0123456789abcdef",
+    "name_claim_id": "claim_local_0123456789abcdef",
+    "canonical_name": "example",
+    "minecraft_uuid": "00000000-0000-4000-8000-000000000001",
+    "claim_type": "LOCAL_SOFT",
+    "identity_type": "SAIL_LOCAL",
+    "iat": 1791244800,
+    "exp": 1791248400,
+    "scope": "minecraft_login",
+    "server_id": "local-survival",
+    "risk_level": "low"
+  }
+}

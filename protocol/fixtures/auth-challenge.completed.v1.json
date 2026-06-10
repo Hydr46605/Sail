@@ -1,0 +1,19 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "challenge_id": "ch_local_0123456789abcdef",
+  "status": "completed",
+  "expires_at": "2026-06-06T00:15:00Z",
+  "completed_at": "2026-06-06T00:10:30Z",
+  "identity": {
+    "account_id": "acct_local_0123456789abcdef",
+    "minecraft_identity_id": "mcid_local_0123456789abcdef",
+    "name_claim_id": "claim_local_0123456789abcdef",
+    "canonical_name": "example",
+    "display_name": "Example",
+    "minecraft_uuid": "00000000-0000-4000-8000-000000000001",
+    "claim_type": "LOCAL_SOFT",
+    "identity_type": "SAIL_LOCAL",
+    "session_token": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImRldi1lczI1Ni0yMDI2LTA2In0.eyJzY29wZSI6Im1pbmVjcmFmdF9sb2dpbiJ9.signature"
+  }
+}
+

@@ -1,0 +1,15 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "error": {
+    "code": "premium_name_required",
+    "message": "This name belongs to a Minecraft Java account. Join with the official account.",
+    "audience": "player",
+    "http_status": 409,
+    "retryable": false,
+    "correlation_id": "corr_local_0123456789abcdef",
+    "details": {
+      "canonical_name": "notch"
+    }
+  }
+}
+

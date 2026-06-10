@@ -1,0 +1,10 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "session_id": "sess_local_0123456789abcdef",
+  "status": "active",
+  "canonical_name": "example",
+  "minecraft_uuid": "00000000-0000-4000-8000-000000000001",
+  "server_id": "local-survival",
+  "issuer_server_id": "local-survival",
+  "session_reuse_policy": "same_registry"
+}

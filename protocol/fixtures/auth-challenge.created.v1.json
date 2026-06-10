@@ -1,0 +1,12 @@
+{
+  "protocol_version": "sail-protocol-v1",
+  "challenge_id": "ch_local_0123456789abcdef",
+  "status": "pending",
+  "server_id": "local-survival",
+  "requested_name": "Example",
+  "mode": "kick",
+  "code": "ABCD-1234",
+  "auth_url": "http://127.0.0.1:8787/auth/minecraft?code=ABCD-1234",
+  "expires_at": "2026-06-06T00:15:00Z"
+}
+

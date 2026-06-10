@@ -1,0 +1,27 @@
+{
+  "name": "@sail/root",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sail monorepo root for the proof-of-name registry and Minecraft identity gateway.",
+  "type": "module",
+  "packageManager": "pnpm@10.15.1",
+  "scripts": {
+    "api:check": "node tools/verify-api-contracts.mjs",
+    "version:check": "node tools/verify-versioning.mjs",
+    "protocol:check": "node tools/verify-protocol.mjs && pnpm api:check && pnpm version:check",
+    "structure:check": "node tools/verify-structure.mjs",
+    "check": "pnpm structure:check && pnpm protocol:check && pnpm -r --if-present run check",
+    "test": "pnpm structure:check && pnpm protocol:check && pnpm -r --if-present run test",
+    "test:db": "pnpm --filter @sail/registry test:db",
+    "release:alpha": "pnpm --filter @sail/console build && ./gradlew :minecraft:gateway:build :minecraft:companion:build && node tools/prepare-alpha-release.mjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "mineflayer": "^4.37.1",
+    "typescript": "^5.9.3"
+  }
+}

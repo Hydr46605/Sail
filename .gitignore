@@ -1,0 +1,10 @@
+.gradle/
+.just/
+.pnpm-store/
+.sail-smoke/
+.sail-ui-run/
+build/
+dist/
+node_modules/
+out/
+*.log

@@ -132,6 +132,8 @@ in [Security](docs/security.md).
 Production or Sail Global deployments must use an explicit `env` or `file`
 signing-key source; the built-in dev key is local-only.
 
+Security reports should follow [Security Policy](SECURITY.md).
+
 ## Paper Companion
 
 The Paper companion is a diagnostics and backend-visibility plugin, not a second
@@ -149,3 +151,7 @@ reload`, and alias `/sailcompanion`.
 - [Security](docs/security.md)
 - [Local Development](docs/local-development.md)
 - [Current State](docs/current-state.md)
+
+## License
+
+Sail is licensed under the [Apache License 2.0](LICENSE).

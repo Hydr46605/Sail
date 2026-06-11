@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Sail monorepo root for the proof-of-name registry and Minecraft identity gateway.",
+  "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@10.15.1",
   "scripts": {

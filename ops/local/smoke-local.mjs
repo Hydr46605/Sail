@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { spawn } from "node:child_process";
@@ -21,7 +21,9 @@ const clientVersion = process.env.SAIL_SMOKE_CLIENT_VERSION ?? "1.21.11";
 const smokePremiumNames = parseSmokePremiumNames(process.env.SAIL_SMOKE_PREMIUM_NAMES ?? "Notch");
 const skipServers = process.argv.includes("--skip-servers");
 const manualClient = process.argv.includes("--manual-client");
+const verifyReleaseBundle = process.argv.includes("--release-bundle");
 const userAgent = "Sail local smoke/0.1.0 (https://github.com/Hydr46605/Sail)";
+const smokeJavaHome = process.env.SAIL_SMOKE_JAVA_HOME ?? process.env.JAVA_HOME;
 
 const processes = [];
 const servers = [];
@@ -48,13 +50,18 @@ async function smoke() {
   await mkdir(cacheDir, { recursive: true });
 
   await run("pnpm", ["--filter", "@sail/registry", "check"], { cwd: root });
-  await run("./gradlew", [":minecraft:gateway:build", ":minecraft:companion:build"], { cwd: root });
+  await run("./gradlew", [":minecraft:gateway:build", ":minecraft:companion:build"], {
+    cwd: root,
+    env: withJavaHome(process.env),
+  });
 
   const mojang = await startMockMojangProfileServer(mojangPort, smokePremiumNames);
   servers.push(mojang);
   console.log(`Mock Mojang profile API listening on http://127.0.0.1:${mojangPort} with ${smokePremiumNames.size} premium name(s).`);
 
-  await run("docker", ["compose", "-f", "ops/local/compose.yml", "up", "-d", "postgres"], { cwd: root });
+  await run("docker", ["compose", "-f", "ops/local/compose.yml", "up", "-d", "--wait", "--wait-timeout", "90", "postgres"], {
+    cwd: root,
+  });
   await waitForTcp("127.0.0.1", 15432, 30_000);
   await run("pnpm", ["--filter", "@sail/registry", "db:migrate"], {
     cwd: root,
@@ -70,12 +77,18 @@ async function smoke() {
   await smokeRegistryApi();
   await verifyGatewayJar();
   await verifyCompanionJar();
+  if (verifyReleaseBundle) {
+    await smokeReleaseBundle();
+  } else {
+    console.log("Release bundle smoke skipped. Pass --release-bundle to rebuild and inspect dist/release.");
+  }
 
   if (!skipServers) {
     assert(registryProcess, "registry process is running before gateway smoke");
     await smokeVelocityAndPaper(registryProcess);
   } else {
     console.log("Skipping Velocity/Paper boot because --skip-servers was provided.");
+    console.log("Skip-server coverage: registry API, PostgreSQL session lifecycle, gateway jar, and companion jar.");
   }
 }
 
@@ -296,6 +309,29 @@ async function verifyCompanionJar() {
     assert(result.stdout.includes("net/sailmc/companion/SailCompanionPlugin.class"), "companion jar contains plugin class");
   });
   console.log("Companion jar smoke passed.");
+}
+
+async function smokeReleaseBundle() {
+  await run("pnpm", ["--filter", "@sail/console", "build"], { cwd: root });
+  await run("node", ["tools/prepare-alpha-release.mjs"], { cwd: root });
+  const manifestPath = join(root, "dist/release/sail-release.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  assertEqual(manifest.protocol_version, "sail-protocol-v1", "release manifest protocol");
+  assertEqual(manifest.channel, "alpha", "release manifest channel");
+  assert(Array.isArray(manifest.artifacts), "release manifest artifacts are present");
+  const artifactIds = new Set(manifest.artifacts.map((artifact) => artifact.id));
+  for (const required of ["gateway", "companion", "registry-openapi", "protocol-version"]) {
+    assert(artifactIds.has(required), `release manifest includes ${required}`);
+  }
+  for (const artifact of manifest.artifacts) {
+    assert(artifact.file && typeof artifact.file === "string", `release artifact ${artifact.id} has file`);
+    assert(artifact.sha256 && /^[a-f0-9]{64}$/u.test(artifact.sha256), `release artifact ${artifact.id} has sha256`);
+    await assertFileSize(join(root, "dist/release/files", artifact.file), artifact.size_bytes, artifact.id);
+    if (artifact.alias_file) {
+      await assertFileSize(join(root, "dist/release/files", artifact.alias_file), artifact.size_bytes, `${artifact.id} alias`);
+    }
+  }
+  console.log(`Release bundle smoke passed for ${manifest.version} with ${manifest.artifacts.length} artifact(s).`);
 }
 
 async function smokeVelocityAndPaper(registry) {
@@ -714,6 +750,22 @@ async function fileHasSha256(path, expected) {
   } catch {
     return false;
   }
+}
+
+async function assertFileSize(path, expectedSize, label) {
+  const file = await stat(path);
+  assertEqual(file.size, expectedSize, `${label} file size`);
+}
+
+function withJavaHome(env) {
+  if (!smokeJavaHome) {
+    return env;
+  }
+  return {
+    ...env,
+    JAVA_HOME: smokeJavaHome,
+    PATH: `${join(smokeJavaHome, "bin")}:${env.PATH ?? ""}`,
+  };
 }
 
 async function downloadFile(url, targetPath) {

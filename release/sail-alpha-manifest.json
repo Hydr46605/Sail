@@ -12,6 +12,7 @@
       "kind": "velocity-plugin",
       "source": "minecraft/gateway/build/libs/gateway-0.1.0-SNAPSHOT.jar",
       "file": "sail-gateway-0.1.0-alpha.1.jar",
+      "alias_file": "sail-gateway.jar",
       "description": "Velocity enforcement plugin for Sail login decisions."
     },
     {
@@ -20,6 +21,7 @@
       "kind": "paper-plugin",
       "source": "minecraft/companion/build/libs/companion-0.1.0-SNAPSHOT.jar",
       "file": "sail-companion-0.1.0-alpha.1.jar",
+      "alias_file": "sail-companion.jar",
       "description": "Paper diagnostics plugin for Sail identity visibility."
     },
     {

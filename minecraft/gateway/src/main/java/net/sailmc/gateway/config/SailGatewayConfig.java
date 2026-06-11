@@ -41,7 +41,9 @@ public record SailGatewayConfig(
 
     public SailGatewayConfig {
         trustPosture = normalizeTrustPosture(trustPosture);
-        server = server == null ? defaultServer() : server;
+        registry = normalizeRegistry(registry);
+        server = normalizeServer(server);
+        loginFlow = normalizeLoginFlow(loginFlow);
         backend = normalizeBackend(backend, server.serverId());
         limbo = normalizeLimbo(limbo);
         if ("global".equals(trustPosture)
@@ -142,6 +144,18 @@ public record SailGatewayConfig(
         return new Server("local-survival", "Local Survival");
     }
 
+    private static Registry defaultRegistry() {
+        return new Registry("self-hosted", LOCAL_REGISTRY_API_URL, LOCAL_REGISTRY_ID, false, List.of());
+    }
+
+    private static LoginFlow defaultLoginFlow() {
+        return new LoginFlow(
+                UnauthenticatedAction.KICK,
+                Duration.ofSeconds(180),
+                true,
+                LOCAL_REGISTRY_AUTH_URL);
+    }
+
     private static Backend defaultBackend(Server server) {
         return new Backend(true, true, server.serverId());
     }
@@ -206,6 +220,80 @@ public record SailGatewayConfig(
         return yaml.toString().stripTrailing();
     }
 
+    private static Registry normalizeRegistry(Registry registry) {
+        if (registry == null) {
+            return defaultRegistry();
+        }
+        String mode = requireNonBlank(registry.mode(), "registry mode must not be blank");
+        URI apiUrl = registry.apiUrl();
+        if (apiUrl == null || apiUrl.getScheme() == null) {
+            throw new IllegalArgumentException("registry api-url must use http or https");
+        }
+        String scheme = apiUrl.getScheme().toLowerCase(Locale.ROOT);
+        if (!"http".equals(scheme) && !"https".equals(scheme)) {
+            throw new IllegalArgumentException("registry api-url must use http or https");
+        }
+        String registryId = requireNonBlank(registry.registryId(), "registry-id must not be blank");
+        List<TrustedKey> trustedKeys = registry.trustedKeys() == null
+                ? List.of()
+                : registry.trustedKeys().stream()
+                        .map(SailGatewayConfig::normalizeTrustedKey)
+                        .toList();
+        return new Registry(mode, apiUrl, registryId, registry.publicKeyPinning(), trustedKeys);
+    }
+
+    private static TrustedKey normalizeTrustedKey(TrustedKey key) {
+        if (key == null) {
+            throw new IllegalArgumentException("trusted key must not be null");
+        }
+        String kid = requireNonBlank(key.kid(), "trusted key kid must not be blank");
+        String alg = requireNonBlank(key.alg(), "trusted key alg must not be blank");
+        String crv = requireNonBlank(key.crv(), "trusted key crv must not be blank");
+        String x = requireNonBlank(key.x(), "trusted key x must not be blank");
+        String y = requireNonBlank(key.y(), "trusted key y must not be blank");
+        if (!"ES256".equals(alg)) {
+            throw new IllegalArgumentException("trusted key alg must be ES256");
+        }
+        if (!"P-256".equals(crv)) {
+            throw new IllegalArgumentException("trusted key crv must be P-256");
+        }
+        return new TrustedKey(kid, alg, crv, x, y);
+    }
+
+    private static Server normalizeServer(Server server) {
+        if (server == null) {
+            return defaultServer();
+        }
+        return new Server(
+                requireNonBlank(server.serverId(), "server id must not be blank"),
+                requireNonBlank(server.displayName(), "server display-name must not be blank"));
+    }
+
+    private static LoginFlow normalizeLoginFlow(LoginFlow loginFlow) {
+        if (loginFlow == null) {
+            return defaultLoginFlow();
+        }
+        if (loginFlow.unauthenticatedAction() == null) {
+            throw new IllegalArgumentException("unauthenticated-action must not be blank");
+        }
+        if (loginFlow.authTimeout() == null
+                || loginFlow.authTimeout().isZero()
+                || loginFlow.authTimeout().isNegative()) {
+            throw new IllegalArgumentException("auth-timeout-seconds must be positive");
+        }
+        String authUrlTemplate = requireNonBlank(
+                loginFlow.authUrlTemplate(),
+                "auth-url-template must not be blank");
+        if (!authUrlTemplate.contains("{code}")) {
+            throw new IllegalArgumentException("auth-url-template must contain {code}");
+        }
+        return new LoginFlow(
+                loginFlow.unauthenticatedAction(),
+                loginFlow.authTimeout(),
+                loginFlow.allowRejoinAfterAuth(),
+                authUrlTemplate);
+    }
+
     private static Registry loadRegistry(ConfigurationNode node, Registry defaults) {
         return new Registry(
                 node.node("mode").getString(defaults.mode()),
@@ -248,10 +336,18 @@ public record SailGatewayConfig(
     }
 
     private static Backend loadBackend(ConfigurationNode node, Backend defaults) {
+        ConfigurationNode targetServerNode = node.node("target-server");
+        String targetServer = defaults.targetServer();
+        if (!targetServerNode.virtual()) {
+            targetServer = targetServerNode.getString("");
+            if (targetServer == null || targetServer.isBlank()) {
+                throw new IllegalArgumentException("target-server must not be blank");
+            }
+        }
         return new Backend(
                 node.node("require-modern-forwarding").getBoolean(defaults.requireModernForwarding()),
                 node.node("fail-if-forwarding-secret-missing").getBoolean(defaults.failIfForwardingSecretMissing()),
-                node.node("target-server").getString(defaults.targetServer()));
+                targetServer);
     }
 
     private static Limbo loadLimbo(ConfigurationNode node, Limbo defaults) {
@@ -281,6 +377,13 @@ public record SailGatewayConfig(
             throw new IllegalArgumentException("limbo poll interval must be positive");
         }
         return limbo;
+    }
+
+    private static String requireNonBlank(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+        return value.trim();
     }
 
     public record Registry(

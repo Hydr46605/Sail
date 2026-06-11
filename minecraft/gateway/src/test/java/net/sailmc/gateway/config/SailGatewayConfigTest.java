@@ -176,6 +176,128 @@ class SailGatewayConfigTest {
     }
 
     @Test
+    void rejectsRegistryApiUrlWithoutHttpScheme() throws Exception {
+        Path configPath = tempDir.resolve("file-registry-url.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  registry:
+                    mode: "self-hosted"
+                    api-url: "file:///tmp/sail-registry"
+                    registry-id: "sail-local"
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("registry api-url must use http or https"));
+    }
+
+    @Test
+    void rejectsBlankRegistryIdentity() throws Exception {
+        Path configPath = tempDir.resolve("blank-registry-id.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  registry:
+                    mode: "self-hosted"
+                    api-url: "http://127.0.0.1:8787"
+                    registry-id: "   "
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("registry-id must not be blank"));
+    }
+
+    @Test
+    void rejectsInvalidAuthTimeout() throws Exception {
+        Path configPath = tempDir.resolve("invalid-timeout.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  login-flow:
+                    unauthenticated-action: kick
+                    auth-timeout-seconds: 0
+                    auth-url-template: "http://127.0.0.1:8787/auth/minecraft?code={code}"
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("auth-timeout-seconds must be positive"));
+    }
+
+    @Test
+    void rejectsAuthUrlTemplateWithoutCodePlaceholder() throws Exception {
+        Path configPath = tempDir.resolve("invalid-auth-url-template.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  login-flow:
+                    unauthenticated-action: kick
+                    auth-timeout-seconds: 180
+                    auth-url-template: "http://127.0.0.1:8787/auth/minecraft"
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("auth-url-template must contain {code}"));
+    }
+
+    @Test
+    void rejectsExplicitBlankBackendTargetServer() throws Exception {
+        Path configPath = tempDir.resolve("blank-backend-target.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  backend:
+                    require-modern-forwarding: true
+                    fail-if-forwarding-secret-missing: true
+                    target-server: "   "
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("target-server must not be blank"));
+    }
+
+    @Test
+    void rejectsIncompleteTrustedKeyMaterial() throws Exception {
+        Path configPath = tempDir.resolve("incomplete-trusted-key.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  trust-posture: "global"
+                  registry:
+                    mode: "global"
+                    api-url: "https://sail.creepers.sbs"
+                    registry-id: "sail-global"
+                    public-key-pinning: true
+                    trusted-keys:
+                      - kid: ""
+                        alg: "ES256"
+                        crv: "P-256"
+                        x: "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY"
+                        y: "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo"
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("trusted key kid must not be blank"));
+    }
+
+    @Test
     void rejectsBlankTrustPostureWhenExplicitlyConfigured() throws Exception {
         Path configPath = tempDir.resolve("blank-posture.yml");
         Files.writeString(configPath, globalConfigYaml("   ", true));

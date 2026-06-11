@@ -16,12 +16,9 @@ public record SailGatewayConfig(
         Server server,
         LoginFlow loginFlow,
         Backend backend) {
-    private static final TrustedKey LOCAL_DEV_TRUSTED_KEY = new TrustedKey(
-            "dev-es256-2026-06",
-            "ES256",
-            "P-256",
-            "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY",
-            "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo");
+    private static final URI GLOBAL_REGISTRY_API_URL = URI.create("https://api.sail.creepers.sbs");
+    private static final String GLOBAL_REGISTRY_AUTH_URL = "https://api.sail.creepers.sbs/auth/minecraft?code={code}";
+    private static final String GLOBAL_REGISTRY_ID = "sail-global";
 
     public SailGatewayConfig(Registry registry, LoginFlow loginFlow, Backend backend) {
         this(registry, defaultServer(), loginFlow, backend);
@@ -29,13 +26,13 @@ public record SailGatewayConfig(
 
     public static SailGatewayConfig defaults() {
         return new SailGatewayConfig(
-                new Registry("self-hosted", URI.create("http://127.0.0.1:8787"), "my-network", true, defaultTrustedKeys()),
+                new Registry("global", GLOBAL_REGISTRY_API_URL, GLOBAL_REGISTRY_ID, false, List.of()),
                 defaultServer(),
                 new LoginFlow(
                         UnauthenticatedAction.KICK,
                         Duration.ofSeconds(180),
                         true,
-                        "http://127.0.0.1:8787/auth/minecraft?code={code}"),
+                        GLOBAL_REGISTRY_AUTH_URL),
                 new Backend(true, true));
     }
 
@@ -62,7 +59,6 @@ public record SailGatewayConfig(
 
     public static String defaultYaml() {
         SailGatewayConfig config = defaults();
-        TrustedKey trustedKey = config.registry().trustedKeys().getFirst();
         return """
                 sail:
                   registry:
@@ -70,12 +66,7 @@ public record SailGatewayConfig(
                     api-url: "%s"
                     registry-id: "%s"
                     public-key-pinning: %s
-                    trusted-keys:
-                      - kid: "%s"
-                        alg: "%s"
-                        crv: "%s"
-                        x: "%s"
-                        y: "%s"
+                %s
 
                   server:
                     id: "%s"
@@ -95,11 +86,7 @@ public record SailGatewayConfig(
                 config.registry().apiUrl(),
                 config.registry().registryId(),
                 config.registry().publicKeyPinning(),
-                trustedKey.kid(),
-                trustedKey.alg(),
-                trustedKey.crv(),
-                trustedKey.x(),
-                trustedKey.y(),
+                trustedKeysYaml(config.registry().trustedKeys()),
                 config.server().serverId(),
                 config.server().displayName(),
                 config.loginFlow().unauthenticatedAction().wireValue(),
@@ -114,8 +101,27 @@ public record SailGatewayConfig(
         return new Server("local-survival", "Local Survival");
     }
 
-    private static List<TrustedKey> defaultTrustedKeys() {
-        return List.of(LOCAL_DEV_TRUSTED_KEY);
+    private static String trustedKeysYaml(List<TrustedKey> trustedKeys) {
+        if (trustedKeys.isEmpty()) {
+            return "    trusted-keys: []";
+        }
+
+        StringBuilder yaml = new StringBuilder("    trusted-keys:\n");
+        for (TrustedKey trustedKey : trustedKeys) {
+            yaml.append("""
+                      - kid: "%s"
+                        alg: "%s"
+                        crv: "%s"
+                        x: "%s"
+                        y: "%s"
+                """.formatted(
+                    trustedKey.kid(),
+                    trustedKey.alg(),
+                    trustedKey.crv(),
+                    trustedKey.x(),
+                    trustedKey.y()));
+        }
+        return yaml.toString().stripTrailing();
     }
 
     private static Registry loadRegistry(ConfigurationNode node, Registry defaults) {

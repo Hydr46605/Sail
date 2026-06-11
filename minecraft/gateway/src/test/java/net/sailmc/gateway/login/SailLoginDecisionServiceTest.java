@@ -17,6 +17,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import net.sailmc.gateway.bridge.SailPaperIdentity;
@@ -107,8 +108,8 @@ class SailLoginDecisionServiceTest {
     }
 
     @Test
-    void acceptsCompletedChallengeWithDefaultSignedSessionProofAndOnlineVerification() throws Exception {
-        SailGatewayConfig config = SailGatewayConfig.defaults();
+    void acceptsCompletedChallengeWithPinnedSignedSessionProofAndOnlineVerification() throws Exception {
+        SailGatewayConfig config = pinnedLocalConfig();
         SignedCompletingRegistryClient registry = new SignedCompletingRegistryClient(signSessionToken());
         SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
 
@@ -189,8 +190,8 @@ class SailLoginDecisionServiceTest {
     }
 
     @Test
-    void rejectsUnsignedCompletedSessionProofWithDefaultVerifier() throws Exception {
-        SailGatewayConfig config = SailGatewayConfig.defaults();
+    void rejectsUnsignedCompletedSessionProofWithPinnedVerifier() throws Exception {
+        SailGatewayConfig config = pinnedLocalConfig();
         CompletingRegistryClient registry = new CompletingRegistryClient();
         SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
 
@@ -642,7 +643,7 @@ class SailLoginDecisionServiceTest {
     }
 
     private static void assertVerificationMismatchRejected(SessionVerificationResponse verification) throws Exception {
-        SailGatewayConfig config = SailGatewayConfig.defaults();
+        SailGatewayConfig config = pinnedLocalConfig();
         CustomVerificationRegistryClient registry =
                 new CustomVerificationRegistryClient(signSessionToken(), verification);
         SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
@@ -679,6 +680,25 @@ class SailLoginDecisionServiceTest {
         return new SailGatewayConfig(
                 defaults.registry(),
                 new SailGatewayConfig.Server(serverId, "Gateway Survival"),
+                defaults.loginFlow(),
+                defaults.backend());
+    }
+
+    private static SailGatewayConfig pinnedLocalConfig() {
+        SailGatewayConfig defaults = SailGatewayConfig.defaults();
+        return new SailGatewayConfig(
+                new SailGatewayConfig.Registry(
+                        "self-hosted",
+                        URI.create("http://127.0.0.1:8787"),
+                        "my-network",
+                        true,
+                        List.of(new SailGatewayConfig.TrustedKey(
+                                "dev-es256-2026-06",
+                                "ES256",
+                                "P-256",
+                                "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY",
+                                "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo"))),
+                defaults.server(),
                 defaults.loginFlow(),
                 defaults.backend());
     }

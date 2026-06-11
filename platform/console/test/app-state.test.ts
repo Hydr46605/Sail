@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { ConsoleProfileResponse } from "../src/types.js";
 import {
   countActiveSessions,
+  formatError,
   formatProviderLabel,
   getAuthStepLabel,
   getConsoleRuntimeConfig,
@@ -232,6 +233,17 @@ describe("console app state helpers", () => {
     expect(isConsoleAuthError(new SailConsoleApiError(410, "session_expired", "Session expired"))).toBe(true);
     expect(isConsoleAuthError(new SailConsoleApiError(409, "name_already_claimed", "Name claimed"))).toBe(false);
     expect(isConsoleAuthError(new Error("network down"))).toBe(false);
+  });
+
+  test("redacts session tokens from displayed errors", () => {
+    expect(formatError(new Error("request failed with Bearer token-secret-123"))).toBe(
+      "request failed with Bearer [redacted]",
+    );
+    expect(formatError(new SailConsoleApiError(
+      403,
+      "session_revoked",
+      "callback rejected /auth/complete#session_token=secret-token&session_id=sess_123",
+    ))).toBe("session_revoked: callback rejected /auth/complete#session_token=[redacted]&session_id=sess_123");
   });
 
   test("normalizes stored theme preferences with a fallback", () => {

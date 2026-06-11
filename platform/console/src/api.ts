@@ -44,16 +44,24 @@ export function createSailConsoleApiClient(options: {
     },
     async getConsoleProfile(sessionToken: string): Promise<ConsoleProfileResponse> {
       return requestJson(fetchImpl, `${baseUrl}/v1/console/me`, {
-        sessionToken,
+        sessionToken: requireSessionToken(sessionToken),
       });
     },
     async revokeConsoleSession(sessionToken: string, sessionId: string): Promise<SessionRevocationResponse> {
       return requestJson(fetchImpl, `${baseUrl}/v1/console/sessions/${encodeURIComponent(sessionId)}/revoke`, {
         method: "POST",
-        sessionToken,
+        sessionToken: requireSessionToken(sessionToken),
       });
     },
   };
+}
+
+function requireSessionToken(sessionToken: string): string {
+  const normalized = sessionToken.trim();
+  if (normalized.length === 0) {
+    throw new SailConsoleApiError(401, "missing_session_token", "Missing Sail session token");
+  }
+  return normalized;
 }
 
 async function requestJson<T>(

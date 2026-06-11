@@ -25,6 +25,14 @@ describe("console auth helpers", () => {
     });
   });
 
+  test("normalizes imported auth values before storing them", () => {
+    expect(parseAuthCompleteHash("#session_token=%20abc%20&session_id=%20sess_123%20")).toEqual({
+      sessionToken: "abc",
+      sessionId: "sess_123",
+    });
+    expect(parseAuthCompleteHash("#session_token=%20%20&session_id=sess_123")).toBeUndefined();
+  });
+
   test("returns undefined when completion hash has no token", () => {
     expect(parseAuthCompleteHash("#session_id=sess_123")).toBeUndefined();
     expect(parseAuthCompleteHash("")).toBeUndefined();
@@ -51,5 +59,16 @@ describe("console auth helpers", () => {
     storage.setItem("sail.console.auth.v1", "{\"sessionToken\":123}");
 
     expect(createSessionAuthStore(storage).read()).toBeUndefined();
+  });
+
+  test("normalizes stored auth values before reuse", () => {
+    const storage = new MemoryStorage();
+    const authStore = createSessionAuthStore(storage);
+
+    authStore.write({ sessionToken: " token ", sessionId: " sess_123 " });
+    expect(storage.getItem("sail.console.auth.v1")).toBe(
+      JSON.stringify({ sessionToken: "token", sessionId: "sess_123" }),
+    );
+    expect(authStore.read()).toEqual({ sessionToken: "token", sessionId: "sess_123" });
   });
 });

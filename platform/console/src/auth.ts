@@ -7,15 +7,15 @@ const storageKey = "sail.console.auth.v1";
 
 export function parseAuthCompleteHash(hash: string): StoredConsoleAuth | undefined {
   const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
-  const sessionToken = params.get("session_token");
-  if (!sessionToken) {
+  const sessionToken = params.get("session_token")?.trim() ?? "";
+  if (sessionToken.length === 0) {
     return undefined;
   }
 
-  const sessionId = params.get("session_id") ?? undefined;
+  const sessionId = params.get("session_id")?.trim() ?? "";
   return {
     sessionToken,
-    ...(sessionId ? { sessionId } : {}),
+    ...(sessionId.length > 0 ? { sessionId } : {}),
   };
 }
 
@@ -29,22 +29,37 @@ export function createSessionAuthStore(storage: Pick<Storage, "getItem" | "setIt
 
       try {
         const value = JSON.parse(raw) as Partial<StoredConsoleAuth>;
-        if (typeof value.sessionToken !== "string" || value.sessionToken.length === 0) {
+        const normalized = normalizeStoredAuth(value);
+        if (!normalized) {
           return undefined;
         }
-        return {
-          sessionToken: value.sessionToken,
-          ...(typeof value.sessionId === "string" && value.sessionId.length > 0 ? { sessionId: value.sessionId } : {}),
-        };
+        return normalized;
       } catch {
         return undefined;
       }
     },
     write(auth: StoredConsoleAuth): void {
-      storage.setItem(storageKey, JSON.stringify(auth));
+      const normalized = normalizeStoredAuth(auth);
+      if (!normalized) {
+        storage.removeItem(storageKey);
+        return;
+      }
+      storage.setItem(storageKey, JSON.stringify(normalized));
     },
     clear(): void {
       storage.removeItem(storageKey);
     },
+  };
+}
+
+function normalizeStoredAuth(auth: Partial<StoredConsoleAuth>): StoredConsoleAuth | undefined {
+  const sessionToken = typeof auth.sessionToken === "string" ? auth.sessionToken.trim() : "";
+  if (sessionToken.length === 0) {
+    return undefined;
+  }
+  const sessionId = typeof auth.sessionId === "string" ? auth.sessionId.trim() : "";
+  return {
+    sessionToken,
+    ...(sessionId.length > 0 ? { sessionId } : {}),
   };
 }

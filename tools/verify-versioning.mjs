@@ -34,6 +34,7 @@ const [
   openApi,
   errorCatalog,
   version,
+  releaseManifest,
   gradleBuild,
 ] = await Promise.all([
   readJson("package.json"),
@@ -43,6 +44,7 @@ const [
   readJson("protocol/openapi/sail-registry.v1.openapi.json"),
   readJson("protocol/errors/catalog.v1.json"),
   readJson("protocol/version.json"),
+  readJson("release/sail-alpha-manifest.json"),
   readText("build.gradle.kts"),
 ]);
 
@@ -61,5 +63,9 @@ assertEqual("OpenAPI info.version", openApi.info?.version, version.protocol_vers
 assertEqual("error catalog protocol_version", errorCatalog.protocol_version, version.protocol_version);
 assertContains("gateway Gradle version", gradleBuild, `version = "${version.components.gateway}"`);
 assertContains("companion Gradle version", gradleBuild, `version = "${version.components.companion}"`);
+
+const releaseArtifacts = new Map(releaseManifest.artifacts.map((artifact) => [artifact.id, artifact]));
+assertEqual("gateway release alias", releaseArtifacts.get("gateway")?.alias_file, "sail-gateway.jar");
+assertEqual("companion release alias", releaseArtifacts.get("companion")?.alias_file, "sail-companion.jar");
 
 console.log("Sail version check passed.");

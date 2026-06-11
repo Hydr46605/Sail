@@ -105,5 +105,5 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "Sail ${VERSION}" \
             --notes-file "$notes" \
-            --prerelease \
+            --latest \
             --verify-tag

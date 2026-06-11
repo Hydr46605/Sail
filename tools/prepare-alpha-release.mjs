@@ -23,6 +23,9 @@ for (const artifact of sourceManifest.artifacts) {
 
   const targetPath = join(filesDir, artifact.file);
   await cp(sourcePath, targetPath);
+  if (typeof artifact.alias_file === "string" && artifact.alias_file.length > 0) {
+    await cp(sourcePath, join(filesDir, artifact.alias_file));
+  }
   const bytes = await readFile(targetPath);
   resolvedArtifacts.push({
     ...artifact,
@@ -66,6 +69,9 @@ function releaseReadme(manifest) {
     "Files:",
     ...manifest.artifacts.map((artifact) =>
       `- files/${artifact.file} (${artifact.kind}) sha256=${artifact.sha256}`),
+    ...manifest.artifacts
+      .filter((artifact) => typeof artifact.alias_file === "string" && artifact.alias_file.length > 0)
+      .map((artifact) => `- files/${artifact.alias_file} (${artifact.kind}, latest alias)`),
     "- console/ (static Sail Console alpha build)",
     "- sail-release.json (resolved manifest)",
     "",

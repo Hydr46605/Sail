@@ -93,8 +93,8 @@ Local setup and verification commands are documented in
 
 ## Alpha Release
 
-Sail Generic builds the alpha product bundle. Deployment repositories can use
-that bundle for public landing pages, infrastructure, and downloads.
+Sail builds the alpha product bundle. Deployment repositories can use that
+bundle for public landing pages, infrastructure, and downloads.
 
 ```sh
 pnpm release:alpha
@@ -105,8 +105,8 @@ The release bundle shape is documented in
 
 ## Local Verification
 
-CI is intentionally test-only. It verifies Sail Generic checks, tests, Gradle,
-and PostgreSQL registry behavior, but it does not deploy Sail Global or publish
+CI is intentionally test-only. It verifies Sail checks, tests, Gradle, and
+PostgreSQL registry behavior, but it does not deploy Sail Global or publish
 production artifacts.
 
 Ignored local runtime artifacts and cleanup commands are documented in

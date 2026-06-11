@@ -30,8 +30,8 @@ bundle, PostgreSQL, and release packaging.
 - OAuth is present for local/dev and Discord-backed flows; production provider
   setup is deployment-specific.
 - The Paper companion is not an authentication layer.
-- Sail Generic does not contain public landing pages or production deployment
-  branding.
+- The Sail repository does not contain public landing pages or production
+  deployment branding.
 - Public trust policy, abuse handling, and registry governance are deployment
   responsibilities, not generic runtime behavior.
 

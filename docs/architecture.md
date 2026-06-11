@@ -66,7 +66,7 @@ Run `pnpm protocol:check` before changing any protocol file.
 
 ## Release Boundary
 
-This repository is Sail Generic. It builds the registry, console, gateway jar,
+This repository is Sail. It builds the registry, console, gateway jar,
 companion jar, protocol contracts, and alpha release bundle.
 
 Deployment-specific branding, public landing pages, infrastructure settings,

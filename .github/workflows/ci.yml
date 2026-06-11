@@ -1,4 +1,4 @@
-name: Sail Generic CI
+name: Sail CI
 
 on:
   push:

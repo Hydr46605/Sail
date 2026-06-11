@@ -9,7 +9,7 @@ node_modules/
 out/
 *.log
 
-# Local/private files that must not be published from Sail Generic.
+# Local secrets and runtime files.
 .env
 .env.*
 !.env.example
@@ -21,12 +21,3 @@ out/
 *.map
 secrets/
 runtime/
-.sail-private/
-specs/
-plans/
-agentic/
-agents/
-AGENTS.md
-CLAUDE.md
-GEMINI.md
-*.local.md

@@ -75,18 +75,21 @@ class SailGatewayConfigTest {
     }
 
     @Test
-    void defaultsToKickModeForLocalDevelopment() {
+    void defaultsToKickModeForSailGlobal() {
         SailGatewayConfig config = SailGatewayConfig.defaults();
 
-        assertEquals(URI.create("http://127.0.0.1:8787"), config.registry().apiUrl());
-        assertEquals("my-network", config.registry().registryId());
-        assertTrue(config.registry().publicKeyPinning());
-        assertEquals(1, config.registry().trustedKeys().size());
-        assertDevTrustedKey(config.registry().trustedKeys().getFirst());
+        assertEquals("global", config.registry().mode());
+        assertEquals(URI.create("https://api.sail.creepers.sbs"), config.registry().apiUrl());
+        assertEquals("sail-global", config.registry().registryId());
+        assertFalse(config.registry().publicKeyPinning());
+        assertEquals(0, config.registry().trustedKeys().size());
         assertEquals("local-survival", config.server().serverId());
         assertEquals("Local Survival", config.server().displayName());
         assertEquals(SailGatewayConfig.UnauthenticatedAction.KICK, config.loginFlow().unauthenticatedAction());
         assertEquals(Duration.ofSeconds(180), config.loginFlow().authTimeout());
+        assertEquals(
+                "https://api.sail.creepers.sbs/auth/minecraft?code={code}",
+                config.loginFlow().authUrlTemplate());
     }
 
     @Test
@@ -108,9 +111,8 @@ class SailGatewayConfigTest {
 
         SailGatewayConfig config = SailGatewayConfig.load(configPath);
 
-        assertTrue(config.registry().publicKeyPinning());
-        assertEquals(1, config.registry().trustedKeys().size());
-        assertDevTrustedKey(config.registry().trustedKeys().getFirst());
+        assertFalse(config.registry().publicKeyPinning());
+        assertEquals(0, config.registry().trustedKeys().size());
     }
 
     @Test
@@ -140,21 +142,22 @@ class SailGatewayConfigTest {
         SailGatewayConfig.writeDefault(configPath);
 
         String yaml = Files.readString(configPath);
-        assertTrue(yaml.contains("    public-key-pinning: true\n"));
-        assertTrue(yaml.contains("    trusted-keys:\n"));
-        assertTrue(yaml.contains("      - kid: \"dev-es256-2026-06\"\n"));
-        assertTrue(yaml.contains("        alg: \"ES256\"\n"));
-        assertTrue(yaml.contains("        crv: \"P-256\"\n"));
-        assertTrue(yaml.contains("        x: \"0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY\"\n"));
-        assertTrue(yaml.contains("        y: \"0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo\"\n"));
+        assertTrue(yaml.contains("    mode: \"global\"\n"));
+        assertTrue(yaml.contains("    api-url: \"https://api.sail.creepers.sbs\"\n"));
+        assertTrue(yaml.contains("    registry-id: \"sail-global\"\n"));
+        assertTrue(yaml.contains("    public-key-pinning: false\n"));
+        assertTrue(yaml.contains("    trusted-keys: []\n"));
         assertTrue(yaml.contains("  server:\n"));
         assertTrue(yaml.contains("    id: \"local-survival\"\n"));
         assertTrue(yaml.contains("    display-name: \"Local Survival\"\n"));
+        assertTrue(yaml.contains("    auth-url-template: \"https://api.sail.creepers.sbs/auth/minecraft?code={code}\"\n"));
 
         SailGatewayConfig config = SailGatewayConfig.load(configPath);
-        assertTrue(config.registry().publicKeyPinning());
-        assertEquals(1, config.registry().trustedKeys().size());
-        assertDevTrustedKey(config.registry().trustedKeys().getFirst());
+        assertEquals("global", config.registry().mode());
+        assertEquals(URI.create("https://api.sail.creepers.sbs"), config.registry().apiUrl());
+        assertEquals("sail-global", config.registry().registryId());
+        assertFalse(config.registry().publicKeyPinning());
+        assertEquals(0, config.registry().trustedKeys().size());
         assertEquals("local-survival", config.server().serverId());
         assertEquals("Local Survival", config.server().displayName());
     }

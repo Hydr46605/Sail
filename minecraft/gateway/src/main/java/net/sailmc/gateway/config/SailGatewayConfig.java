@@ -16,8 +16,8 @@ public record SailGatewayConfig(
         Server server,
         LoginFlow loginFlow,
         Backend backend) {
-    private static final URI GLOBAL_REGISTRY_API_URL = URI.create("https://api.sail.creepers.sbs");
-    private static final String GLOBAL_REGISTRY_AUTH_URL = "https://api.sail.creepers.sbs/auth/minecraft?code={code}";
+    private static final URI GLOBAL_REGISTRY_API_URL = URI.create("https://sail.creepers.sbs");
+    private static final String GLOBAL_REGISTRY_AUTH_URL = "https://sail.creepers.sbs/auth/minecraft?code={code}";
     private static final String GLOBAL_REGISTRY_ID = "sail-global";
 
     public SailGatewayConfig(Registry registry, LoginFlow loginFlow, Backend backend) {

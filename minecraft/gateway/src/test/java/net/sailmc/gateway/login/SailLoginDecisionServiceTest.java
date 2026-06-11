@@ -314,6 +314,24 @@ class SailLoginDecisionServiceTest {
     }
 
     @Test
+    void clearsPendingChallengeWhenCompletedIdentityIsMalformed() throws Exception {
+        SailGatewayConfig config = SailGatewayConfig.defaults();
+        MalformedIdentityRegistryClient registry = new MalformedIdentityRegistryClient();
+        SailLoginDecisionService service = new SailLoginDecisionService(config, registry, acceptingVerifier());
+
+        LoginDecision firstJoin = service.decide("Example", "127.0.0.1:25565");
+        LoginDecision secondJoin = service.decide("Example", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.KICK, firstJoin.action());
+        assertEquals(LoginDecision.Action.KICK, secondJoin.action());
+        assertTrue(secondJoin.message().contains("unavailable"));
+        assertEquals(0, service.pendingChallengeCount());
+        assertEquals(0, service.activeSessionCount());
+        assertEquals(1, registry.statusChecks);
+        assertEquals(0, registry.sessionVerifications);
+    }
+
+    @Test
     void resumesAcceptedLocalSessionWithoutCreatingANewChallenge() throws Exception {
         SailGatewayConfig config = SailGatewayConfig.defaults();
         CompletingRegistryClient registry = new CompletingRegistryClient();
@@ -637,7 +655,7 @@ class SailLoginDecisionServiceTest {
 
     private static class CompletingRegistryClient implements SailRegistryClient {
         private int createdChallenges;
-        private int statusChecks;
+        protected int statusChecks;
         protected int sessionVerifications;
 
         @Override
@@ -694,6 +712,30 @@ class SailLoginDecisionServiceTest {
                     "same_registry",
                     "example",
                     "00000000-0000-4000-8000-000000000001");
+        }
+    }
+
+    private static final class MalformedIdentityRegistryClient extends CompletingRegistryClient {
+        @Override
+        public AuthChallengeStatusResponse getAuthChallenge(String challengeId) {
+            statusChecks += 1;
+            return new AuthChallengeStatusResponse(
+                    "sail-protocol-v1",
+                    challengeId,
+                    "completed",
+                    "2026-06-06T00:15:00Z",
+                    Optional.of("2026-06-06T00:10:30Z"),
+                    Optional.of(new CompletedIdentity(
+                            "acct_local_0123456789abcdef",
+                            "mcid_local_0123456789abcdef",
+                            "claim_local_0123456789abcdef",
+                            "example",
+                            "Example",
+                            "not-a-uuid",
+                            "LOCAL_SOFT",
+                            "SAIL_LOCAL",
+                            "sess_local_0123456789abcdef",
+                            "eyJhbGciOiJFUzI1NiJ9.payload.signature")));
         }
     }
 

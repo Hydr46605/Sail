@@ -113,8 +113,15 @@ public final class SailLoginDecisionService {
                 return null;
             }
 
-            UUID minecraftUuid = UUID.fromString(identity.minecraftUuid());
-            if (identity.canonicalName().equals(canonicalName)) {
+            UUID minecraftUuid;
+            try {
+                minecraftUuid = UUID.fromString(identity.minecraftUuid());
+            } catch (IllegalArgumentException error) {
+                pendingChallenges.remove(canonicalName);
+                return LoginDecision.kick(KickMessageRenderer.registryUnavailable());
+            }
+
+            if (canonicalName.equals(identity.canonicalName())) {
                 LocalProofDecision localProofDecision = verifyLocalSessionProof(
                         canonicalName,
                         identity.sessionToken(),

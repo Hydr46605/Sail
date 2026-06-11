@@ -4,7 +4,7 @@
   "title": "Sail Auth Challenge Status v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "challenge_id", "status", "expires_at"],
+  "required": ["protocol_version", "challenge_id", "status", "mode", "expires_at"],
   "properties": {
     "protocol_version": {
       "const": "sail-protocol-v1"
@@ -16,6 +16,10 @@
     "status": {
       "type": "string",
       "enum": ["pending", "completed", "expired", "revoked", "denied"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["kick", "limbo", "hybrid"]
     },
     "expires_at": {
       "type": "string",

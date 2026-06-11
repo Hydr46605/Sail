@@ -6,6 +6,8 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.player.GameProfileRequestEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
@@ -21,6 +23,9 @@ import net.sailmc.gateway.bridge.SailGameProfileFactory;
 import net.sailmc.gateway.command.SailAdminCommand;
 import net.sailmc.gateway.command.SailGatewayStatus;
 import net.sailmc.gateway.config.SailGatewayConfig;
+import net.sailmc.gateway.limbo.SailLimboApiController;
+import net.sailmc.gateway.limbo.SailLimboController;
+import net.sailmc.gateway.limbo.SailLimboRuntime;
 import net.sailmc.gateway.login.LocalSessionProfile;
 import net.sailmc.gateway.login.LoginDecision;
 import net.sailmc.gateway.login.SailLoginDecisionService;
@@ -34,7 +39,8 @@ import org.slf4j.Logger;
         name = "Sail Gateway",
         version = "0.1.0-SNAPSHOT",
         description = "Proof-of-name authentication gateway for Velocity.",
-        authors = {"BerylLabs"})
+        authors = {"BerylLabs"},
+        dependencies = {@Dependency(id = "limboapi", optional = true)})
 public final class SailGatewayPlugin {
     private final ProxyServer proxyServer;
     private final Logger logger;
@@ -43,6 +49,7 @@ public final class SailGatewayPlugin {
     private volatile SailGatewayConfig config;
     private volatile HttpSailRegistryClient registryClient;
     private volatile SailLoginDecisionService loginDecisionService;
+    private volatile SailLimboController limboController = SailLimboController.DISABLED;
     private volatile String lastInitializationError;
 
     @Inject
@@ -61,6 +68,11 @@ public final class SailGatewayPlugin {
         } else {
             logger.error(reloadMessage);
         }
+    }
+
+    @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent event) {
+        disposeLimboController();
     }
 
     private void registerCommands() {
@@ -84,15 +96,31 @@ public final class SailGatewayPlugin {
                     HttpClient.newHttpClient(),
                     loadedConfig.registry().apiUrl(),
                     loadedConfig.loginFlow().authTimeout());
+            SailLimboRuntime.verifyRuntimeAvailable(
+                    loadedConfig,
+                    proxyServer.getPluginManager().isLoaded("limboapi"));
+            SailLoginDecisionService loginDecisionService = new SailLoginDecisionService(loadedConfig, registryClient);
+            SailLimboController nextLimboController = SailLimboController.DISABLED;
+            if (SailLimboRuntime.requiresLimboApi(loadedConfig)) {
+                nextLimboController = SailLimboApiController.create(
+                        proxyServer,
+                        this,
+                        logger,
+                        loadedConfig,
+                        loginDecisionService);
+            }
+            disposeLimboController();
             this.config = loadedConfig;
             this.registryClient = registryClient;
-            this.loginDecisionService = new SailLoginDecisionService(loadedConfig, registryClient);
+            this.loginDecisionService = loginDecisionService;
+            this.limboController = nextLimboController;
             this.lastInitializationError = null;
             return "Sail Gateway reloaded.";
-        } catch (IOException | RuntimeException error) {
+        } catch (IOException | RuntimeException | LinkageError error) {
             this.config = null;
             this.registryClient = null;
             this.loginDecisionService = null;
+            disposeLimboController();
             this.lastInitializationError = error.getMessage();
             logger.error("Sail Gateway failed to initialize", error);
             return "Sail Gateway reload failed: " + this.lastInitializationError;
@@ -117,11 +145,19 @@ public final class SailGatewayPlugin {
             registryHealth = "unavailable";
         }
 
+        SailLimboController currentLimbo = limboController;
         return new SailGatewayStatus(
                 true,
                 currentConfig.registry().registryId(),
                 currentConfig.registry().apiUrl(),
+                currentConfig.trustPosture(),
+                currentConfig.registry().publicKeyPinning(),
+                currentConfig.registry().trustedKeys().size(),
                 currentConfig.loginFlow().unauthenticatedAction().wireValue(),
+                currentConfig.backend().targetServer(),
+                SailLimboRuntime.requiresLimboApi(currentConfig),
+                currentLimbo.available(),
+                currentLimbo.waitingCount(),
                 currentLoginService.pendingChallengeCount(),
                 currentLoginService.activeSessionCount(),
                 registryHealth,
@@ -152,6 +188,14 @@ public final class SailGatewayPlugin {
             } else if (decision.action() == LoginDecision.Action.ACCEPT_LOCAL_PROFILE) {
                 acceptedProfiles.put(event.getConnection(), decision.localProfile().orElseThrow());
                 event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
+            } else if (decision.action() == LoginDecision.Action.WAIT_IN_LIMBO) {
+                SailLimboController currentLimbo = limboController;
+                if (currentLimbo.available()) {
+                    event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
+                } else {
+                    event.setResult(PreLoginEvent.PreLoginComponentResult.denied(
+                            Component.text(KickMessageRenderer.registryUnavailable())));
+                }
             }
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
@@ -171,5 +215,13 @@ public final class SailGatewayPlugin {
             return;
         }
         event.setGameProfile(SailGameProfileFactory.fromLocalSession(profile));
+    }
+
+    private void disposeLimboController() {
+        SailLimboController current = limboController;
+        if (current.available()) {
+            current.dispose();
+        }
+        limboController = SailLimboController.DISABLED;
     }
 }

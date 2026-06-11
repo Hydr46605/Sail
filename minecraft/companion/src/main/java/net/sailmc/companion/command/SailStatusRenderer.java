@@ -12,19 +12,22 @@ public final class SailStatusRenderer {
             boolean initialized,
             SailIdentityRegistry.Snapshot snapshot,
             boolean serverOnlineMode,
-            boolean forwardingSecretFileDetected) {
+            boolean forwardingSecretFileDetected,
+            boolean warnOnDirectJoinRisk) {
         List<String> lines = new ArrayList<>();
         lines.add("Sail Companion: " + (initialized ? "initialized" : "not initialized"));
         lines.add("Online tracked: " + snapshot.onlinePlayers());
         lines.add("Verified: " + snapshot.verifiedPlayers());
         lines.add("Unverified by Sail: " + snapshot.unverifiedPlayers());
         lines.add("Malformed Sail identity: " + snapshot.malformedPlayers());
+        lines.add("Identity source: Velocity forwarded Sail profile property");
         lines.addAll(SailBackendDiagnostics.render(
                 serverOnlineMode,
                 snapshot.verifiedPlayers(),
                 snapshot.unverifiedPlayers(),
                 snapshot.malformedPlayers(),
-                forwardingSecretFileDetected));
+                forwardingSecretFileDetected,
+                warnOnDirectJoinRisk));
         return List.copyOf(lines);
     }
 }

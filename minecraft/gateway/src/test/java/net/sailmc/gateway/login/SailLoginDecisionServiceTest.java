@@ -62,6 +62,96 @@ class SailLoginDecisionServiceTest {
     }
 
     @Test
+    void createsLimboChallengeForUnauthenticatedLocalLogin() throws Exception {
+        SailGatewayConfig config = configWithMode(SailGatewayConfig.UnauthenticatedAction.LIMBO);
+        CapturingRegistryClient registry = new CapturingRegistryClient();
+        SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
+
+        LoginDecision decision = service.decide("Example", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.WAIT_IN_LIMBO, decision.action());
+        assertTrue(decision.message().contains("http://127.0.0.1:8787/auth/minecraft?code=ABCD-1234"));
+        assertTrue(decision.challenge().orElseThrow().authUrl().contains("ABCD-1234"));
+        assertEquals("limbo", decision.challenge().orElseThrow().mode());
+        assertEquals("limbo", registry.request.mode());
+    }
+
+    @Test
+    void keepsPendingLimboChallengeInLimboUntilCompletion() throws Exception {
+        SailGatewayConfig config = configWithMode(SailGatewayConfig.UnauthenticatedAction.LIMBO);
+        PendingRegistryClient registry = new PendingRegistryClient();
+        SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
+
+        LoginDecision firstJoin = service.decide("Example", "127.0.0.1:25565");
+        LoginDecision secondPoll = service.decide("Example", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.WAIT_IN_LIMBO, firstJoin.action());
+        assertEquals(LoginDecision.Action.WAIT_IN_LIMBO, secondPoll.action());
+        assertEquals("limbo", firstJoin.challenge().orElseThrow().mode());
+        assertEquals("limbo", secondPoll.challenge().orElseThrow().mode());
+        assertEquals(1, registry.createdChallenges);
+        assertEquals(1, registry.statusChecks);
+    }
+
+    @Test
+    void acceptsCompletedLimboChallengeWithLocalProfile() throws Exception {
+        SailGatewayConfig config = configWithMode(SailGatewayConfig.UnauthenticatedAction.LIMBO);
+        CompletingRegistryClient registry = new CompletingRegistryClient();
+        SailLoginDecisionService service = new SailLoginDecisionService(config, registry, acceptingVerifier());
+
+        LoginDecision firstJoin = service.decide("Example", "127.0.0.1:25565");
+        LoginDecision secondPoll = service.decide("Example", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.WAIT_IN_LIMBO, firstJoin.action());
+        assertEquals("limbo", firstJoin.challenge().orElseThrow().mode());
+        assertEquals(LoginDecision.Action.ACCEPT_LOCAL_PROFILE, secondPoll.action());
+        assertEquals("example", secondPoll.localProfile().orElseThrow().canonicalName());
+        assertEquals(1, registry.createdChallenges);
+        assertEquals(1, registry.statusChecks);
+        assertEquals(1, registry.sessionVerifications);
+    }
+
+    @Test
+    void rejectsExpiredLimboChallengeInsteadOfIssuingSilentReplacement() throws Exception {
+        SailGatewayConfig config = configWithMode(SailGatewayConfig.UnauthenticatedAction.LIMBO);
+        ExpiredRegistryClient registry = new ExpiredRegistryClient();
+        SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
+
+        LoginDecision firstJoin = service.decide("Example", "127.0.0.1:25565");
+        LoginDecision secondPoll = service.decide("Example", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.WAIT_IN_LIMBO, firstJoin.action());
+        assertEquals(LoginDecision.Action.KICK, secondPoll.action());
+        assertTrue(secondPoll.message().contains("expired"));
+        assertEquals(1, registry.createdChallenges);
+        assertEquals(1, registry.statusChecks);
+    }
+
+    @Test
+    void routesHybridLocalNamesThroughHybridLimboChallenge() throws Exception {
+        SailGatewayConfig config = configWithMode(SailGatewayConfig.UnauthenticatedAction.HYBRID);
+        CapturingRegistryClient registry = new CapturingRegistryClient();
+        SailLoginDecisionService service = new SailLoginDecisionService(config, registry);
+
+        LoginDecision decision = service.decide("Example", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.WAIT_IN_LIMBO, decision.action());
+        assertEquals("hybrid", decision.challenge().orElseThrow().mode());
+        assertEquals("hybrid", registry.request.mode());
+    }
+
+    @Test
+    void requiresPremiumAuthForHybridPremiumMinecraftName() throws Exception {
+        SailGatewayConfig config = configWithMode(SailGatewayConfig.UnauthenticatedAction.HYBRID);
+        SailLoginDecisionService service = new SailLoginDecisionService(config, new RejectionRegistryClient());
+
+        LoginDecision decision = service.decide("Notch", "127.0.0.1:25565");
+
+        assertEquals(LoginDecision.Action.REQUIRE_PREMIUM_AUTH, decision.action());
+        assertTrue(!decision.message().contains("code="));
+    }
+
+    @Test
     void requiresPremiumAuthForPremiumMinecraftName() throws Exception {
         SailGatewayConfig config = SailGatewayConfig.defaults();
         SailLoginDecisionService service = new SailLoginDecisionService(config, new RejectionRegistryClient());
@@ -399,7 +489,7 @@ class SailLoginDecisionServiceTest {
                     "pending",
                     "local-survival",
                     "Example",
-                    "kick",
+                    request.mode(),
                     "ABCD-1234",
                     URI.create("http://127.0.0.1:8787/auth/minecraft?code=ABCD-1234").toString(),
                     "2026-06-06T00:15:00Z");
@@ -408,6 +498,80 @@ class SailLoginDecisionServiceTest {
         @Override
         public AuthChallengeStatusResponse getAuthChallenge(String challengeId) {
             throw new UnsupportedOperationException("status lookup not used in this test");
+        }
+
+        @Override
+        public net.sailmc.gateway.registry.RegistryHealthResponse getHealth() {
+            throw new UnsupportedOperationException("health lookup not used in this test");
+        }
+    }
+
+    private static final class PendingRegistryClient implements SailRegistryClient {
+        private int createdChallenges;
+        private int statusChecks;
+
+        @Override
+        public AuthChallengeResponse createAuthChallenge(AuthChallengeRequest request) {
+            createdChallenges += 1;
+            return new AuthChallengeResponse(
+                    "sail-protocol-v1",
+                    "ch_local_0123456789abcdef",
+                    "pending",
+                    request.serverId(),
+                    request.username(),
+                    request.mode(),
+                    "ABCD-1234",
+                    URI.create("http://127.0.0.1:8787/auth/minecraft?code=ABCD-1234").toString(),
+                    "2026-06-06T00:15:00Z");
+        }
+
+        @Override
+        public AuthChallengeStatusResponse getAuthChallenge(String challengeId) {
+            statusChecks += 1;
+            return new AuthChallengeStatusResponse(
+                    "sail-protocol-v1",
+                    challengeId,
+                    "pending",
+                    "2026-06-06T00:15:00Z",
+                    Optional.empty(),
+                    Optional.empty());
+        }
+
+        @Override
+        public net.sailmc.gateway.registry.RegistryHealthResponse getHealth() {
+            throw new UnsupportedOperationException("health lookup not used in this test");
+        }
+    }
+
+    private static final class ExpiredRegistryClient implements SailRegistryClient {
+        private int createdChallenges;
+        private int statusChecks;
+
+        @Override
+        public AuthChallengeResponse createAuthChallenge(AuthChallengeRequest request) {
+            createdChallenges += 1;
+            return new AuthChallengeResponse(
+                    "sail-protocol-v1",
+                    "ch_local_0123456789abcdef",
+                    "pending",
+                    request.serverId(),
+                    request.username(),
+                    request.mode(),
+                    "ABCD-1234",
+                    URI.create("http://127.0.0.1:8787/auth/minecraft?code=ABCD-1234").toString(),
+                    "2026-06-06T00:15:00Z");
+        }
+
+        @Override
+        public AuthChallengeStatusResponse getAuthChallenge(String challengeId) {
+            statusChecks += 1;
+            return new AuthChallengeStatusResponse(
+                    "sail-protocol-v1",
+                    challengeId,
+                    "expired",
+                    "2026-06-06T00:15:00Z",
+                    Optional.empty(),
+                    Optional.empty());
         }
 
         @Override
@@ -681,6 +845,20 @@ class SailLoginDecisionServiceTest {
                 defaults.registry(),
                 new SailGatewayConfig.Server(serverId, "Gateway Survival"),
                 defaults.loginFlow(),
+                defaults.backend());
+    }
+
+    private static SailGatewayConfig configWithMode(SailGatewayConfig.UnauthenticatedAction action) {
+        SailGatewayConfig defaults = SailGatewayConfig.defaults();
+        return new SailGatewayConfig(
+                defaults.trustPosture(),
+                defaults.registry(),
+                defaults.server(),
+                new SailGatewayConfig.LoginFlow(
+                        action,
+                        defaults.loginFlow().authTimeout(),
+                        defaults.loginFlow().allowRejoinAfterAuth(),
+                        defaults.loginFlow().authUrlTemplate()),
                 defaults.backend());
     }
 

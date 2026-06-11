@@ -53,6 +53,7 @@ What Sail provides:
 - no `/register` or `/login` password flow,
 - premium-name protection before local claims are accepted,
 - signed registry sessions verified by Velocity,
+- kick/rejoin and LimboAPI-backed wait-room login modes,
 - self-hosted registry support where the server owner opts in,
 - an optional Paper companion for admin visibility and backend metadata.
 
@@ -164,6 +165,11 @@ forwards a `sail.identity.v1` profile property after a Sail local session is
 verified; the companion validates that metadata, tracks online state in memory,
 and exposes `/sailpaper status`, `/sailpaper lookup <player>`, `/sailpaper
 reload`, and alias `/sailcompanion`.
+
+The gateway supports kick/rejoin auth plus LimboAPI-backed limbo and hybrid
+modes. Hybrid keeps premium names under Mojang/Microsoft authority and sends
+local Sail identities through the Sail limbo wait-room flow. Paper remains a
+diagnostic consumer of the identity property; it does not enforce login policy.
 
 ## Documents
 

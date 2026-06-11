@@ -49,17 +49,14 @@ The Velocity plugin writes this shape when no config file exists:
 
 ```yaml
 sail:
+  trust-posture: "local-dev"
+
   registry:
     mode: "self-hosted"
     api-url: "http://127.0.0.1:8787"
-    registry-id: "my-network"
-    public-key-pinning: true
-    trusted-keys:
-      - kid: "dev-es256-2026-06"
-        alg: "ES256"
-        crv: "P-256"
-        x: "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY"
-        y: "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo"
+    registry-id: "sail-local"
+    public-key-pinning: false
+    trusted-keys: []
 
   server:
     id: "local-survival"
@@ -74,9 +71,30 @@ sail:
   backend:
     require-modern-forwarding: true
     fail-if-forwarding-secret-missing: true
+    target-server: "local-survival"
+
+  limbo:
+    poll-interval-seconds: 2
 ```
 
-`unauthenticated-action` accepts `kick`, `limbo`, or `hybrid`.
+The generated gateway config is local-development oriented. Operators who point
+the gateway at Sail Global or another public registry must enable
+`public-key-pinning` and provide trusted public keys.
+
+`unauthenticated-action` supports:
+
+- `kick`: creates a browser auth challenge, kicks the player with the URL/code,
+  and accepts the verified Sail profile on rejoin.
+- `limbo`: requires the LimboAPI Velocity plugin. The gateway lets the player
+  enter a Sail virtual limbo, polls the registry, applies the verified
+  `sail.identity.v1` profile property when auth completes, then connects the
+  player to `backend.target-server`.
+- `hybrid`: requires the LimboAPI Velocity plugin. Premium-name conflicts are
+  routed to Velocity online-mode auth; local Sail names use the limbo wait-room
+  flow. Ambiguous or failed registry decisions fail closed.
+
+When `limbo` or `hybrid` is configured and LimboAPI is missing or incompatible,
+the gateway refuses to initialize instead of silently downgrading behavior.
 
 ## Paper Companion
 
@@ -107,4 +125,3 @@ dev command is:
 ```sh
 pnpm --filter @sail/console dev
 ```
-

@@ -34,11 +34,11 @@ public final class KickMessageRenderer {
                 """.formatted(message).stripTrailing();
     }
 
-    public static String unsupportedLimboMode() {
+    public static String challengeExpired() {
         return """
-                Sail limbo mode is not available in this build.
+                Sail authentication expired.
 
-                Ask a server admin to use kick or hybrid login mode.
+                Join again to start a new login.
                 """.stripTrailing();
     }
 }

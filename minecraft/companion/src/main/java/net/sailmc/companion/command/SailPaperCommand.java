@@ -41,11 +41,13 @@ public final class SailPaperCommand implements TabExecutor {
         }
 
         if (args.length == 0 || "status".equalsIgnoreCase(args[0])) {
+            SailCompanionConfig currentConfig = config.get();
             sendLines(sender, SailStatusRenderer.render(
                     true,
                     registry.snapshot(),
                     serverOnlineMode.getAsBoolean(),
-                    forwardingSecretFileDetected.getAsBoolean()));
+                    forwardingSecretFileDetected.getAsBoolean(),
+                    currentConfig.warnOnDirectJoinRisk()));
             return true;
         }
 

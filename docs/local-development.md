@@ -2,6 +2,10 @@
 
 Use Node 22.12+, pnpm 10.15+, Java 21, Docker, and a POSIX shell.
 
+Java 21 is the authoritative Minecraft build runtime for Sail release artifacts.
+Newer local JVMs can compile the project, but release jar hashes should be
+compared against Java 21/CI output.
+
 ## Install
 
 ```sh

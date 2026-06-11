@@ -47,10 +47,15 @@ class SailGatewayConfigTest {
                   backend:
                     require-modern-forwarding: true
                     fail-if-forwarding-secret-missing: true
+                    target-server: "survival"
+
+                  limbo:
+                    poll-interval-seconds: 2
                 """);
 
         SailGatewayConfig config = SailGatewayConfig.load(configPath);
 
+        assertEquals("local-dev", config.trustPosture());
         assertEquals("self-hosted", config.registry().mode());
         assertEquals(URI.create("http://127.0.0.1:8787"), config.registry().apiUrl());
         assertEquals("my-network", config.registry().registryId());
@@ -72,24 +77,140 @@ class SailGatewayConfigTest {
                 config.loginFlow().authUrlTemplate());
         assertTrue(config.backend().requireModernForwarding());
         assertTrue(config.backend().failIfForwardingSecretMissing());
+        assertEquals("survival", config.backend().targetServer());
+        assertEquals(Duration.ofSeconds(2), config.limbo().pollInterval());
     }
 
     @Test
-    void defaultsToKickModeForSailGlobal() {
+    void defaultsToLocalDevKickMode() {
         SailGatewayConfig config = SailGatewayConfig.defaults();
 
-        assertEquals("global", config.registry().mode());
-        assertEquals(URI.create("https://sail.creepers.sbs"), config.registry().apiUrl());
-        assertEquals("sail-global", config.registry().registryId());
+        assertEquals("local-dev", config.trustPosture());
+        assertEquals("self-hosted", config.registry().mode());
+        assertEquals(URI.create("http://127.0.0.1:8787"), config.registry().apiUrl());
+        assertEquals("sail-local", config.registry().registryId());
         assertFalse(config.registry().publicKeyPinning());
         assertEquals(0, config.registry().trustedKeys().size());
-        assertEquals("local-survival", config.server().serverId());
-        assertEquals("Local Survival", config.server().displayName());
         assertEquals(SailGatewayConfig.UnauthenticatedAction.KICK, config.loginFlow().unauthenticatedAction());
-        assertEquals(Duration.ofSeconds(180), config.loginFlow().authTimeout());
-        assertEquals(
-                "https://sail.creepers.sbs/auth/minecraft?code={code}",
-                config.loginFlow().authUrlTemplate());
+        assertEquals("local-survival", config.backend().targetServer());
+        assertEquals(Duration.ofSeconds(2), config.limbo().pollInterval());
+    }
+
+    @Test
+    void rejectsGlobalPostureWithoutPinnedKeys() throws Exception {
+        Path configPath = tempDir.resolve("global-unpinned.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  trust-posture: "global"
+                  registry:
+                    mode: "global"
+                    api-url: "https://sail.creepers.sbs"
+                    registry-id: "sail-global"
+                    public-key-pinning: false
+                    trusted-keys: []
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("global trust posture requires public-key-pinning"));
+    }
+
+    @Test
+    void rejectsGlobalPostureWithPinningButNoTrustedKeys() throws Exception {
+        Path configPath = tempDir.resolve("global-empty-keys.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  trust-posture: "global"
+                  registry:
+                    mode: "global"
+                    api-url: "https://sail.creepers.sbs"
+                    registry-id: "sail-global"
+                    public-key-pinning: true
+                    trusted-keys: []
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("global trust posture requires public-key-pinning"));
+    }
+
+    @Test
+    void rejectsGlobalPostureWithTrustedKeysButPinningDisabled() throws Exception {
+        Path configPath = tempDir.resolve("global-unpinned-key.yml");
+        Files.writeString(configPath, globalConfigYaml("global", false));
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("global trust posture requires public-key-pinning"));
+    }
+
+    @Test
+    void normalizesGlobalPostureAndRequiresPinnedKeys() throws Exception {
+        Path configPath = tempDir.resolve("global-pinned.yml");
+        Files.writeString(configPath, globalConfigYaml(" Global ", true));
+
+        SailGatewayConfig config = SailGatewayConfig.load(configPath);
+
+        assertEquals("global", config.trustPosture());
+        assertTrue(config.registry().publicKeyPinning());
+        assertEquals(1, config.registry().trustedKeys().size());
+        assertDevTrustedKey(config.registry().trustedKeys().getFirst());
+    }
+
+    @Test
+    void rejectsUnsupportedTrustPosture() throws Exception {
+        Path configPath = tempDir.resolve("unsupported-posture.yml");
+        Files.writeString(configPath, globalConfigYaml("globla", true));
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("Unsupported trust-posture"));
+    }
+
+    @Test
+    void rejectsBlankTrustPostureWhenExplicitlyConfigured() throws Exception {
+        Path configPath = tempDir.resolve("blank-posture.yml");
+        Files.writeString(configPath, globalConfigYaml("   ", true));
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("Unsupported trust-posture"));
+    }
+
+    @Test
+    void rejectsEmptyTrustPostureWhenExplicitlyConfigured() throws Exception {
+        Path configPath = tempDir.resolve("empty-posture.yml");
+        Files.writeString(
+                configPath,
+                """
+                sail:
+                  trust-posture:
+                  registry:
+                    mode: "global"
+                    api-url: "https://sail.creepers.sbs"
+                    registry-id: "sail-global"
+                    public-key-pinning: true
+                    trusted-keys:
+                      - kid: "dev-es256-2026-06"
+                        alg: "ES256"
+                        crv: "P-256"
+                        x: "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY"
+                        y: "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo"
+                """);
+
+        IllegalArgumentException error = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> SailGatewayConfig.load(configPath));
+        assertTrue(error.getMessage().contains("Unsupported trust-posture"));
     }
 
     @Test
@@ -142,24 +263,31 @@ class SailGatewayConfigTest {
         SailGatewayConfig.writeDefault(configPath);
 
         String yaml = Files.readString(configPath);
-        assertTrue(yaml.contains("    mode: \"global\"\n"));
-        assertTrue(yaml.contains("    api-url: \"https://sail.creepers.sbs\"\n"));
-        assertTrue(yaml.contains("    registry-id: \"sail-global\"\n"));
+        assertTrue(yaml.contains("  trust-posture: \"local-dev\"\n"));
+        assertTrue(yaml.contains("    mode: \"self-hosted\"\n"));
+        assertTrue(yaml.contains("    api-url: \"http://127.0.0.1:8787\"\n"));
+        assertTrue(yaml.contains("    registry-id: \"sail-local\"\n"));
         assertTrue(yaml.contains("    public-key-pinning: false\n"));
         assertTrue(yaml.contains("    trusted-keys: []\n"));
         assertTrue(yaml.contains("  server:\n"));
         assertTrue(yaml.contains("    id: \"local-survival\"\n"));
         assertTrue(yaml.contains("    display-name: \"Local Survival\"\n"));
-        assertTrue(yaml.contains("    auth-url-template: \"https://sail.creepers.sbs/auth/minecraft?code={code}\"\n"));
+        assertTrue(yaml.contains("    auth-url-template: \"http://127.0.0.1:8787/auth/minecraft?code={code}\"\n"));
+        assertTrue(yaml.contains("    target-server: \"local-survival\"\n"));
+        assertTrue(yaml.contains("  limbo:\n"));
+        assertTrue(yaml.contains("    poll-interval-seconds: 2\n"));
 
         SailGatewayConfig config = SailGatewayConfig.load(configPath);
-        assertEquals("global", config.registry().mode());
-        assertEquals(URI.create("https://sail.creepers.sbs"), config.registry().apiUrl());
-        assertEquals("sail-global", config.registry().registryId());
+        assertEquals("local-dev", config.trustPosture());
+        assertEquals("self-hosted", config.registry().mode());
+        assertEquals(URI.create("http://127.0.0.1:8787"), config.registry().apiUrl());
+        assertEquals("sail-local", config.registry().registryId());
         assertFalse(config.registry().publicKeyPinning());
         assertEquals(0, config.registry().trustedKeys().size());
         assertEquals("local-survival", config.server().serverId());
         assertEquals("Local Survival", config.server().displayName());
+        assertEquals("local-survival", config.backend().targetServer());
+        assertEquals(Duration.ofSeconds(2), config.limbo().pollInterval());
     }
 
     private static void assertDevTrustedKey(SailGatewayConfig.TrustedKey key) {
@@ -168,5 +296,23 @@ class SailGatewayConfigTest {
         assertEquals("P-256", key.crv());
         assertEquals("0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY", key.x());
         assertEquals("0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo", key.y());
+    }
+
+    private static String globalConfigYaml(String trustPosture, boolean publicKeyPinning) {
+        return """
+                sail:
+                  trust-posture: "%s"
+                  registry:
+                    mode: "global"
+                    api-url: "https://sail.creepers.sbs"
+                    registry-id: "sail-global"
+                    public-key-pinning: %s
+                    trusted-keys:
+                      - kid: "dev-es256-2026-06"
+                        alg: "ES256"
+                        crv: "P-256"
+                        x: "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY"
+                        y: "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo"
+                """.formatted(trustPosture, publicKeyPinning);
     }
 }

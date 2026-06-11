@@ -6,6 +6,7 @@ import {
   getAuthStepLabel,
   getConsoleRuntimeConfig,
   getConsoleRouterBasePath,
+  getOperatorSummary,
   getNextThemePreference,
   getSessionHealthLabel,
   isConsoleAuthError,
@@ -122,6 +123,81 @@ describe("console app state helpers", () => {
         },
       ],
     })).toBe("1 active Sail session");
+  });
+
+  test("summarizes operator session and server coverage", () => {
+    const profile: ConsoleProfileResponse = {
+      ...baseProfile,
+      sessions: [
+        {
+          session_id: "sess_pending",
+          server_id: "local-survival",
+          server_display_name: "Local Survival",
+          status: "pending",
+          current: false,
+          created_at: "2026-06-08T10:00:00.000Z",
+          completed_at: null,
+          expires_at: "2026-06-08T10:15:00.000Z",
+          revoked_at: null,
+        },
+        {
+          session_id: "sess_completed",
+          server_id: "local-survival",
+          server_display_name: "Local Survival",
+          status: "completed",
+          current: true,
+          created_at: "2026-06-08T10:00:00.000Z",
+          completed_at: "2026-06-08T10:01:00.000Z",
+          expires_at: "2026-06-08T10:15:00.000Z",
+          revoked_at: null,
+        },
+        {
+          session_id: "sess_revoked",
+          server_id: "limbo",
+          server_display_name: "Limbo",
+          status: "revoked",
+          current: false,
+          created_at: "2026-06-08T10:00:00.000Z",
+          completed_at: "2026-06-08T10:01:00.000Z",
+          expires_at: "2026-06-08T10:15:00.000Z",
+          revoked_at: "2026-06-08T10:02:00.000Z",
+        },
+      ],
+      trusted_servers: [
+        {
+          protocol_version: "sail-protocol-v1",
+          server_id: "local-survival",
+          registry_id: "sail",
+          display_name: "Local Survival",
+          registry_mode: "hybrid",
+          allowed_claim_types: ["SAIL_GLOBAL", "LOCAL_SOFT"],
+          privacy_mode: "standard",
+          public_listing: false,
+          session_reuse_policy: "same_registry",
+          status: "active",
+        },
+        {
+          protocol_version: "sail-protocol-v1",
+          server_id: "limbo",
+          registry_id: "sail",
+          display_name: "Limbo",
+          registry_mode: "global",
+          allowed_claim_types: ["MINECRAFT_VERIFIED"],
+          privacy_mode: "minimal",
+          public_listing: false,
+          session_reuse_policy: "off",
+          status: "disabled",
+        },
+      ],
+    };
+
+    expect(getOperatorSummary(profile)).toEqual({
+      activeSessionsLabel: "2 active gateway sessions",
+      inactiveSessionsLabel: "1 inactive session record",
+      activeServersLabel: "1 active trusted server",
+      reviewServersLabel: "1 trusted server needs review",
+      reusePoliciesLabel: "2 reuse policies",
+    });
   });
 
   test("clears auth when revoking the current session without a stored session id", () => {

@@ -145,4 +145,73 @@ describe("Sail Console user flow UI", () => {
     expect(screen.getByText("0 active sessions")).toBeTruthy();
     expect(screen.getByText("No gateway sessions yet")).toBeTruthy();
   });
+
+  test("renders operator coverage from sessions and trusted servers", async () => {
+    const profile: ConsoleProfileResponse = {
+      ...emptyProfile,
+      sessions: [
+        {
+          session_id: "sess_pending",
+          server_id: "local-survival",
+          server_display_name: "Local Survival",
+          status: "pending",
+          current: false,
+          created_at: "2026-06-08T10:00:00.000Z",
+          completed_at: null,
+          expires_at: "2026-06-08T10:15:00.000Z",
+          revoked_at: null,
+        },
+        {
+          session_id: "sess_revoked",
+          server_id: "limbo",
+          server_display_name: "Limbo",
+          status: "revoked",
+          current: false,
+          created_at: "2026-06-08T10:00:00.000Z",
+          completed_at: "2026-06-08T10:01:00.000Z",
+          expires_at: "2026-06-08T10:15:00.000Z",
+          revoked_at: "2026-06-08T10:02:00.000Z",
+        },
+      ],
+      trusted_servers: [
+        {
+          protocol_version: "sail-protocol-v1",
+          registry_id: "sail",
+          server_id: "local-survival",
+          display_name: "Local Survival",
+          registry_mode: "hybrid",
+          allowed_claim_types: ["SAIL_GLOBAL", "LOCAL_SOFT"],
+          session_reuse_policy: "same_registry",
+          privacy_mode: "standard",
+          status: "active",
+          public_listing: false,
+        },
+        {
+          protocol_version: "sail-protocol-v1",
+          registry_id: "sail",
+          server_id: "limbo",
+          display_name: "Limbo",
+          registry_mode: "global",
+          allowed_claim_types: ["MINECRAFT_VERIFIED"],
+          session_reuse_policy: "off",
+          privacy_mode: "minimal",
+          status: "disabled",
+          public_listing: false,
+        },
+      ],
+    };
+    window.sessionStorage.setItem("sail.console.auth.v1", JSON.stringify({ sessionToken: "token" }));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(profile)));
+
+    renderConsole();
+
+    await waitFor(() => {
+      expect(screen.getByText("Operator summary")).toBeTruthy();
+    });
+    const operatorSummary = screen.getByRole("list", { name: "Operator summary" });
+    expect(within(operatorSummary).getByText("1 active gateway session")).toBeTruthy();
+    expect(within(operatorSummary).getByText("1 inactive session record")).toBeTruthy();
+    expect(within(operatorSummary).getByText("1 active trusted server")).toBeTruthy();
+    expect(within(operatorSummary).getByText("1 trusted server needs review")).toBeTruthy();
+  });
 });

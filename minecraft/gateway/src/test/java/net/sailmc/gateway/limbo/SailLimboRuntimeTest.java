@@ -38,7 +38,42 @@ class SailLimboRuntimeTest {
                 true);
     }
 
+    @Test
+    void failsClosedWhenPollIntervalCannotRunBeforeAuthTimeout() {
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> SailLimboRuntime.verifyRuntimeAvailable(
+                        configWithModeAndTiming(
+                                SailGatewayConfig.UnauthenticatedAction.LIMBO,
+                                Duration.ofSeconds(2),
+                                Duration.ofSeconds(2)),
+                        true));
+
+        assertTrue(error.getMessage().contains("limbo poll interval must be shorter than auth timeout"));
+    }
+
+    @Test
+    void failsClosedWhenAuthTimeoutCannotBePassedToLimboApi() {
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> SailLimboRuntime.verifyRuntimeAvailable(
+                        configWithModeAndTiming(
+                                SailGatewayConfig.UnauthenticatedAction.LIMBO,
+                                Duration.ofDays(30),
+                                Duration.ofSeconds(2)),
+                        true));
+
+        assertTrue(error.getMessage().contains("auth timeout is too large for LimboAPI"));
+    }
+
     private static SailGatewayConfig configWithMode(SailGatewayConfig.UnauthenticatedAction action) {
+        return configWithModeAndTiming(action, Duration.ofSeconds(180), Duration.ofSeconds(2));
+    }
+
+    private static SailGatewayConfig configWithModeAndTiming(
+            SailGatewayConfig.UnauthenticatedAction action,
+            Duration authTimeout,
+            Duration pollInterval) {
         SailGatewayConfig defaults = SailGatewayConfig.defaults();
         return new SailGatewayConfig(
                 defaults.trustPosture(),
@@ -46,10 +81,10 @@ class SailLimboRuntimeTest {
                 defaults.server(),
                 new SailGatewayConfig.LoginFlow(
                         action,
-                        defaults.loginFlow().authTimeout(),
+                        authTimeout,
                         defaults.loginFlow().allowRejoinAfterAuth(),
                         defaults.loginFlow().authUrlTemplate()),
                 defaults.backend(),
-                new SailGatewayConfig.Limbo(Duration.ofSeconds(2)));
+                new SailGatewayConfig.Limbo(pollInterval));
     }
 }

@@ -110,7 +110,7 @@ public final class SailLimboApiController implements SailLimboController {
         }
         return limboFactory.createLimbo(world)
                 .setName("Sail Limbo")
-                .setReadTimeout((int) config.loginFlow().authTimeout().toMillis())
+                .setReadTimeout(SailLimboRuntime.readTimeoutMillis(config))
                 .setWorldTime(6_000L)
                 .setGameMode(GameMode.ADVENTURE)
                 .setShouldRejoin(false)

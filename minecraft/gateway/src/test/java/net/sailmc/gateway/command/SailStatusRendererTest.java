@@ -17,6 +17,8 @@ class SailStatusRendererTest {
                 0,
                 "kick",
                 "local-survival",
+                180,
+                2,
                 false,
                 false,
                 0,
@@ -34,6 +36,8 @@ class SailStatusRendererTest {
         assertTrue(output.contains("Trusted keys: 0"));
         assertTrue(output.contains("Login mode: kick"));
         assertTrue(output.contains("Backend target: local-survival"));
+        assertTrue(output.contains("Auth timeout: 180s"));
+        assertTrue(output.contains("Limbo poll interval: 2s"));
         assertTrue(output.contains("LimboAPI: not required"));
         assertTrue(output.contains("Waiting limbo players: 0"));
         assertTrue(output.contains("Pending challenges: 2"));
@@ -52,6 +56,8 @@ class SailStatusRendererTest {
                 0,
                 "limbo",
                 "survival",
+                180,
+                2,
                 true,
                 true,
                 3,
@@ -64,6 +70,8 @@ class SailStatusRendererTest {
 
         assertTrue(output.contains("Login mode: limbo"));
         assertTrue(output.contains("Backend target: survival"));
+        assertTrue(output.contains("Auth timeout: 180s"));
+        assertTrue(output.contains("Limbo poll interval: 2s"));
         assertTrue(output.contains("LimboAPI: required and available"));
         assertTrue(output.contains("Waiting limbo players: 3"));
     }

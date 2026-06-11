@@ -79,7 +79,7 @@ class SailGatewayConfigTest {
         SailGatewayConfig config = SailGatewayConfig.defaults();
 
         assertEquals("global", config.registry().mode());
-        assertEquals(URI.create("https://api.sail.creepers.sbs"), config.registry().apiUrl());
+        assertEquals(URI.create("https://sail.creepers.sbs"), config.registry().apiUrl());
         assertEquals("sail-global", config.registry().registryId());
         assertFalse(config.registry().publicKeyPinning());
         assertEquals(0, config.registry().trustedKeys().size());
@@ -88,7 +88,7 @@ class SailGatewayConfigTest {
         assertEquals(SailGatewayConfig.UnauthenticatedAction.KICK, config.loginFlow().unauthenticatedAction());
         assertEquals(Duration.ofSeconds(180), config.loginFlow().authTimeout());
         assertEquals(
-                "https://api.sail.creepers.sbs/auth/minecraft?code={code}",
+                "https://sail.creepers.sbs/auth/minecraft?code={code}",
                 config.loginFlow().authUrlTemplate());
     }
 
@@ -143,18 +143,18 @@ class SailGatewayConfigTest {
 
         String yaml = Files.readString(configPath);
         assertTrue(yaml.contains("    mode: \"global\"\n"));
-        assertTrue(yaml.contains("    api-url: \"https://api.sail.creepers.sbs\"\n"));
+        assertTrue(yaml.contains("    api-url: \"https://sail.creepers.sbs\"\n"));
         assertTrue(yaml.contains("    registry-id: \"sail-global\"\n"));
         assertTrue(yaml.contains("    public-key-pinning: false\n"));
         assertTrue(yaml.contains("    trusted-keys: []\n"));
         assertTrue(yaml.contains("  server:\n"));
         assertTrue(yaml.contains("    id: \"local-survival\"\n"));
         assertTrue(yaml.contains("    display-name: \"Local Survival\"\n"));
-        assertTrue(yaml.contains("    auth-url-template: \"https://api.sail.creepers.sbs/auth/minecraft?code={code}\"\n"));
+        assertTrue(yaml.contains("    auth-url-template: \"https://sail.creepers.sbs/auth/minecraft?code={code}\"\n"));
 
         SailGatewayConfig config = SailGatewayConfig.load(configPath);
         assertEquals("global", config.registry().mode());
-        assertEquals(URI.create("https://api.sail.creepers.sbs"), config.registry().apiUrl());
+        assertEquals(URI.create("https://sail.creepers.sbs"), config.registry().apiUrl());
         assertEquals("sail-global", config.registry().registryId());
         assertFalse(config.registry().publicKeyPinning());
         assertEquals(0, config.registry().trustedKeys().size());

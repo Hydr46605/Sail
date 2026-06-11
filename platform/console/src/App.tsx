@@ -34,6 +34,11 @@ const themeStorageKey = "sail.console.theme.v1";
 
 type ConsoleSession = ConsoleProfileResponse["sessions"][number];
 type ConsoleProviderLabel = Pick<ConsoleLinkedProvider, "provider" | "provider_username">;
+type ConsoleRuntimeEnv = Record<string, string | boolean | undefined>;
+export type ConsoleRuntimeConfig = {
+  defaultRegistryUrl: string;
+  registryLocked: boolean;
+};
 type ThemeController = {
   theme: ConsoleTheme;
   toggleTheme: () => void;
@@ -42,6 +47,7 @@ type ThemeController = {
 export type ConsoleTheme = "light" | "dark";
 
 const ThemeContext = createContext<ThemeController | undefined>(undefined);
+const RuntimeConfigContext = createContext<ConsoleRuntimeConfig | undefined>(undefined);
 
 export function isCurrentSessionRevoked(profile: ConsoleProfileResponse, currentSessionId?: string): boolean {
   const currentSession = profile.sessions.find((session) =>
@@ -108,6 +114,62 @@ export function getNextThemePreference(theme: ConsoleTheme): ConsoleTheme {
   return theme === "dark" ? "light" : "dark";
 }
 
+export function getConsoleRuntimeConfig(env: ConsoleRuntimeEnv = readViteEnv()): ConsoleRuntimeConfig {
+  return {
+    defaultRegistryUrl: normalizeRegistryUrl(env.VITE_SAIL_CONSOLE_REGISTRY_URL, defaultRegistryUrl),
+    registryLocked: env.VITE_SAIL_CONSOLE_LOCK_REGISTRY === true || env.VITE_SAIL_CONSOLE_LOCK_REGISTRY === "true",
+  };
+}
+
+export function getConsoleRouterBasePath(pathname = readCurrentPathname()): string {
+  const normalizedPath = pathname.replace(/\/index\.html$/u, "");
+  const consoleMarker = "/console";
+  const consoleIndex = normalizedPath.indexOf(consoleMarker);
+  if (consoleIndex === -1) {
+    return "/";
+  }
+
+  const endIndex = consoleIndex + consoleMarker.length;
+  const nextCharacter = normalizedPath.at(endIndex);
+  if (nextCharacter && nextCharacter !== "/") {
+    return "/";
+  }
+
+  return normalizedPath.slice(0, endIndex) || "/";
+}
+
+function canonicalizeConsoleIndexPath(basePath: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const homePath = getConsoleHomePath(basePath);
+  if (window.location.pathname === `${basePath}/index.html`) {
+    window.history.replaceState(null, "", `${homePath}${window.location.hash}`);
+  }
+}
+
+function getConsoleHomePath(basePath: string): string {
+  return basePath === "/" ? "/" : `${basePath}/`;
+}
+
+function readCurrentPathname(): string {
+  return typeof window === "undefined" ? "/" : window.location.pathname;
+}
+
+function readViteEnv(): ConsoleRuntimeEnv {
+  return (import.meta as ImportMeta & { env?: ConsoleRuntimeEnv }).env ?? {};
+}
+
+function normalizeRegistryUrl(value: string | boolean | undefined, fallback: string): string {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const trimmedValue = value.trim().replace(/\/+$/u, "");
+  return trimmedValue.length > 0 ? trimmedValue : fallback;
+}
+
 const rootRoute = createRootRoute({
   component: ConsoleRoot,
 });
@@ -124,7 +186,11 @@ const authCompleteRoute = createRoute({
   component: AuthCompleteRoute,
 });
 
+const consoleRouterBasePath = getConsoleRouterBasePath();
+const consoleRuntimeConfig = getConsoleRuntimeConfig();
+
 const router = createRouter({
+  basepath: consoleRouterBasePath,
   routeTree: rootRoute.addChildren([indexRoute, authCompleteRoute]),
 });
 
@@ -134,8 +200,11 @@ declare module "@tanstack/react-router" {
   }
 }
 
-export function App() {
+export function App(props: { runtimeConfig?: ConsoleRuntimeConfig } = {}) {
+  canonicalizeConsoleIndexPath(consoleRouterBasePath);
+
   const [theme, setTheme] = useState(readStoredTheme);
+  const runtimeConfig = props.runtimeConfig ?? consoleRuntimeConfig;
 
   useEffect(() => {
     applyConsoleTheme(theme);
@@ -148,9 +217,11 @@ export function App() {
   }), [theme]);
 
   return (
-    <ThemeContext.Provider value={themeController}>
-      <RouterProvider router={router} />
-    </ThemeContext.Provider>
+    <RuntimeConfigContext.Provider value={runtimeConfig}>
+      <ThemeContext.Provider value={themeController}>
+        <RouterProvider router={router} />
+      </ThemeContext.Provider>
+    </RuntimeConfigContext.Provider>
   );
 }
 
@@ -167,7 +238,7 @@ function AuthCompleteRoute() {
       writeStoredAuth(auth);
     }
 
-    window.history.replaceState(null, "", "/");
+    window.history.replaceState(null, "", getConsoleHomePath(consoleRouterBasePath));
     void navigate({ to: "/", replace: true });
   }, [navigate]);
 
@@ -186,10 +257,13 @@ function AuthCompleteRoute() {
 }
 
 function ConsoleHomeRoute() {
+  const runtimeConfig = useConsoleRuntimeConfig();
   const queryClient = useQueryClient();
-  const [registryUrl, setRegistryUrl] = useState(readStoredRegistryUrl);
+  const [registryUrl, setRegistryUrl] = useState(() => readStoredRegistryUrl(runtimeConfig));
   const [auth, setAuth] = useState<StoredConsoleAuth | undefined>(readStoredAuth);
-  const effectiveRegistryUrl = registryUrl.trim() || defaultRegistryUrl;
+  const effectiveRegistryUrl = runtimeConfig.registryLocked
+    ? runtimeConfig.defaultRegistryUrl
+    : registryUrl.trim() || runtimeConfig.defaultRegistryUrl;
   const client = useMemo(
     () => createSailConsoleApiClient({ baseUrl: effectiveRegistryUrl }),
     [effectiveRegistryUrl],
@@ -236,6 +310,11 @@ function ConsoleHomeRoute() {
     queryClient.removeQueries({ queryKey: ["console-profile"] });
   };
 
+  const connectAuth = (nextAuth: StoredConsoleAuth) => {
+    writeStoredAuth(nextAuth);
+    setAuth(nextAuth);
+  };
+
   useEffect(() => {
     if (
       (profileQuery.data && isCurrentSessionRevoked(profileQuery.data, auth?.sessionId)) ||
@@ -246,15 +325,28 @@ function ConsoleHomeRoute() {
   }, [auth?.sessionId, profileQuery.data, profileQuery.error]);
 
   const updateRegistryUrl = (nextUrl: string) => {
+    if (runtimeConfig.registryLocked) {
+      return;
+    }
+
     setRegistryUrl(nextUrl);
     writeStoredRegistryUrl(nextUrl);
     authChallengeMutation.reset();
   };
 
-  const connectAuth = (nextAuth: StoredConsoleAuth) => {
-    writeStoredAuth(nextAuth);
-    setAuth(nextAuth);
-  };
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const nextAuth = parseAuthCompleteHash(window.location.hash);
+    if (!nextAuth) {
+      return;
+    }
+
+    connectAuth(nextAuth);
+    window.history.replaceState(null, "", getConsoleHomePath(consoleRouterBasePath));
+  }, []);
 
   const logout = () => {
     clearSessionAuth();
@@ -265,6 +357,8 @@ function ConsoleHomeRoute() {
       <main className="console-shell">
         <UnauthenticatedPanel
           registryUrl={registryUrl}
+          defaultRegistryUrl={runtimeConfig.defaultRegistryUrl}
+          registryLocked={runtimeConfig.registryLocked}
           authChallenge={authChallengeMutation.data}
           authChallengeError={authChallengeMutation.error}
           isStartingAuth={authChallengeMutation.isPending}
@@ -298,6 +392,8 @@ function ConsoleHomeRoute() {
 
 function UnauthenticatedPanel(props: {
   registryUrl: string;
+  defaultRegistryUrl: string;
+  registryLocked: boolean;
   authChallenge: ConsoleAuthChallengeResponse | undefined;
   authChallengeError: unknown;
   isStartingAuth: boolean;
@@ -388,21 +484,23 @@ function UnauthenticatedPanel(props: {
           </div>
         ) : null}
         {props.authChallengeError ? <ErrorBanner error={props.authChallengeError} /> : null}
-        <details className="developer-tools">
-          <summary>Developer tools</summary>
-          <div className="developer-tools-body">
-            <label className="field-label">
-              <span>Registry URL</span>
-              <input
-                type="url"
-                value={props.registryUrl}
-                placeholder={defaultRegistryUrl}
-                onChange={(event) => props.onRegistryUrlChange(event.target.value)}
-              />
-            </label>
-            <TokenImportDialog onImport={props.onImport} />
-          </div>
-        </details>
+        {props.registryLocked ? null : (
+          <details className="developer-tools">
+            <summary>Developer tools</summary>
+            <div className="developer-tools-body">
+              <label className="field-label">
+                <span>Registry URL</span>
+                <input
+                  type="url"
+                  value={props.registryUrl}
+                  placeholder={props.defaultRegistryUrl}
+                  onChange={(event) => props.onRegistryUrlChange(event.target.value)}
+                />
+              </label>
+              <TokenImportDialog onImport={props.onImport} />
+            </div>
+          </details>
+        )}
       </section>
     </div>
   );
@@ -843,10 +941,14 @@ function clearStoredAuth(): void {
   }
 }
 
-function readStoredRegistryUrl(): string {
+function readStoredRegistryUrl(runtimeConfig: ConsoleRuntimeConfig = consoleRuntimeConfig): string {
+  if (runtimeConfig.registryLocked) {
+    return runtimeConfig.defaultRegistryUrl;
+  }
+
   const storage = getSessionStorage();
   const storedUrl = storage?.getItem(registryUrlStorageKey);
-  return storedUrl && storedUrl.length > 0 ? storedUrl : defaultRegistryUrl;
+  return storedUrl && storedUrl.length > 0 ? storedUrl : runtimeConfig.defaultRegistryUrl;
 }
 
 function writeStoredRegistryUrl(registryUrl: string): void {
@@ -893,6 +995,14 @@ function useConsoleTheme(): ThemeController {
     throw new Error("Sail Console theme context was not found");
   }
   return themeController;
+}
+
+function useConsoleRuntimeConfig(): ConsoleRuntimeConfig {
+  const runtimeConfig = useContext(RuntimeConfigContext);
+  if (!runtimeConfig) {
+    throw new Error("Sail Console runtime config was not found");
+  }
+  return runtimeConfig;
 }
 
 function getSessionStorage(): Storage | undefined {

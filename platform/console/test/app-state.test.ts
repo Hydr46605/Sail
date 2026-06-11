@@ -4,6 +4,8 @@ import {
   countActiveSessions,
   formatProviderLabel,
   getAuthStepLabel,
+  getConsoleRuntimeConfig,
+  getConsoleRouterBasePath,
   getNextThemePreference,
   getSessionHealthLabel,
   isConsoleAuthError,
@@ -174,5 +176,31 @@ describe("console app state helpers", () => {
 
   test("formats provider labels without usernames", () => {
     expect(formatProviderLabel({ provider: "dev", provider_username: null })).toBe("dev");
+  });
+
+  test("detects the router base path for static console deployments", () => {
+    expect(getConsoleRouterBasePath("/")).toBe("/");
+    expect(getConsoleRouterBasePath("/auth/complete")).toBe("/");
+    expect(getConsoleRouterBasePath("/console/")).toBe("/console");
+    expect(getConsoleRouterBasePath("/console/index.html")).toBe("/console");
+    expect(getConsoleRouterBasePath("/console/auth/complete")).toBe("/console");
+    expect(getConsoleRouterBasePath("/downloads/console/index.html")).toBe("/downloads/console");
+  });
+
+  test("keeps the default console configurable for local development", () => {
+    expect(getConsoleRuntimeConfig({})).toEqual({
+      defaultRegistryUrl: "http://127.0.0.1:8787",
+      registryLocked: false,
+    });
+  });
+
+  test("locks the console to a configured public registry", () => {
+    expect(getConsoleRuntimeConfig({
+      VITE_SAIL_CONSOLE_REGISTRY_URL: " https://api.sailmc.net/ ",
+      VITE_SAIL_CONSOLE_LOCK_REGISTRY: "true",
+    })).toEqual({
+      defaultRegistryUrl: "https://api.sailmc.net",
+      registryLocked: true,
+    });
   });
 });

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "../src/App.js";
 import type { ConsoleProfileResponse } from "../src/types.js";
 
-function renderConsole() {
+function renderConsole(props?: { registryLocked?: boolean }) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -12,10 +12,16 @@ function renderConsole() {
       },
     },
   });
+  const appProps = props?.registryLocked ? {
+    runtimeConfig: {
+      defaultRegistryUrl: "https://api.sailmc.net",
+      registryLocked: true,
+    },
+  } : {};
 
   render(
     <QueryClientProvider client={queryClient}>
-      <App />
+      <App {...appProps} />
     </QueryClientProvider>,
   );
 }
@@ -67,6 +73,17 @@ describe("Sail Console user flow UI", () => {
     expect(screen.queryByText("Mojang proves premium names. Sail proves local names.")).toBeNull();
     expect(screen.queryByRole("link", { name: /download/i })).toBeNull();
     expect(screen.queryByText("No Sail session connected.")).toBeNull();
+  });
+
+  test("hides developer tools when the console registry is locked", async () => {
+    renderConsole({ registryLocked: true });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Sail Console" })).toBeTruthy();
+    });
+    expect(screen.queryByText("Developer tools")).toBeNull();
+    expect(screen.queryByLabelText("Registry URL")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Import session" })).toBeNull();
   });
 
   test("creates a console auth challenge before continuing to Discord", async () => {

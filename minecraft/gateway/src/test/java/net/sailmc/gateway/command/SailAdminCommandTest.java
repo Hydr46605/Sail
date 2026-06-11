@@ -26,6 +26,8 @@ class SailAdminCommandTest {
                         0,
                         "kick",
                         "local-survival",
+                        180,
+                        2,
                         false,
                         false,
                         0,

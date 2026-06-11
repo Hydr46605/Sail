@@ -20,6 +20,8 @@ public final class SailStatusRenderer {
                 Trusted keys: %d
                 Login mode: %s
                 Backend target: %s
+                Auth timeout: %ds
+                Limbo poll interval: %ds
                 LimboAPI: %s
                 Waiting limbo players: %d
                 Pending challenges: %d
@@ -33,6 +35,8 @@ public final class SailStatusRenderer {
                 status.trustedKeyCount(),
                 status.loginMode(),
                 status.backendTargetServer(),
+                status.authTimeoutSeconds(),
+                status.limboPollIntervalSeconds(),
                 limboApiStatus(status),
                 status.waitingLimboPlayers(),
                 status.pendingChallenges(),

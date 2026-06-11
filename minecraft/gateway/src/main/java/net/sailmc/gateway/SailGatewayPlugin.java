@@ -155,6 +155,8 @@ public final class SailGatewayPlugin {
                 currentConfig.registry().trustedKeys().size(),
                 currentConfig.loginFlow().unauthenticatedAction().wireValue(),
                 currentConfig.backend().targetServer(),
+                currentConfig.loginFlow().authTimeout().toSeconds(),
+                currentConfig.limbo().pollInterval().toSeconds(),
                 SailLimboRuntime.requiresLimboApi(currentConfig),
                 currentLimbo.available(),
                 currentLimbo.waitingCount(),

@@ -35,6 +35,13 @@ const themeStorageKey = "sail.console.theme.v1";
 type ConsoleSession = ConsoleProfileResponse["sessions"][number];
 type ConsoleProviderLabel = Pick<ConsoleLinkedProvider, "provider" | "provider_username">;
 type ConsoleRuntimeEnv = Record<string, string | boolean | undefined>;
+type OperatorSummary = {
+  activeSessionsLabel: string;
+  inactiveSessionsLabel: string;
+  activeServersLabel: string;
+  reviewServersLabel: string;
+  reusePoliciesLabel: string;
+};
 export type ConsoleRuntimeConfig = {
   defaultRegistryUrl: string;
   registryLocked: boolean;
@@ -86,8 +93,28 @@ export function getSessionHealthLabel(profile: ConsoleProfileResponse | undefine
   return `${activeSessionCount} active Sail sessions`;
 }
 
+export function getOperatorSummary(profile: ConsoleProfileResponse): OperatorSummary {
+  const activeSessionCount = countActiveSessions(profile);
+  const inactiveSessionCount = profile.sessions.length - activeSessionCount;
+  const activeServerCount = profile.trusted_servers.filter((server) => server.status === "active").length;
+  const reviewServerCount = profile.trusted_servers.length - activeServerCount;
+  const reusePolicyCount = new Set(profile.trusted_servers.map((server) => server.session_reuse_policy)).size;
+
+  return {
+    activeSessionsLabel: `${activeSessionCount} active gateway ${plural(activeSessionCount, "session")}`,
+    inactiveSessionsLabel: `${inactiveSessionCount} inactive session ${plural(inactiveSessionCount, "record")}`,
+    activeServersLabel: `${activeServerCount} active trusted ${plural(activeServerCount, "server")}`,
+    reviewServersLabel: `${reviewServerCount} trusted ${plural(reviewServerCount, "server")} ${reviewServerCount === 1 ? "needs" : "need"} review`,
+    reusePoliciesLabel: reusePolicyCount === 0 ? "No reuse policies" : `${reusePolicyCount} reuse ${plural(reusePolicyCount, "policy", "policies")}`,
+  };
+}
+
 export function formatProviderLabel(provider: ConsoleProviderLabel): string {
   return provider.provider_username ? `${provider.provider} / ${provider.provider_username}` : provider.provider;
+}
+
+function plural(count: number, singular: string, pluralValue = `${singular}s`): string {
+  return count === 1 ? singular : pluralValue;
 }
 
 export function shouldClearAuthAfterRevoke(
@@ -664,6 +691,8 @@ function DashboardContent(props: {
   isRevoking: boolean;
   onRevoke: (sessionId: string) => void;
 }) {
+  const operatorSummary = getOperatorSummary(props.profile);
+
   return (
     <>
       <section className="console-section" aria-labelledby="account-heading">
@@ -679,6 +708,26 @@ function DashboardContent(props: {
           <li><strong>{props.profile.trusted_servers.length} trusted servers</strong></li>
           <li><strong>{countActiveSessions(props.profile)} active sessions</strong></li>
         </ul>
+        <div className="operator-summary-panel">
+          <span className="section-kicker">Operator summary</span>
+          <ul className="operator-summary" aria-label="Operator summary">
+            <li>
+              <span>Gateway sessions</span>
+              <strong>{operatorSummary.activeSessionsLabel}</strong>
+              <small>{operatorSummary.inactiveSessionsLabel}</small>
+            </li>
+            <li>
+              <span>Server trust</span>
+              <strong>{operatorSummary.activeServersLabel}</strong>
+              <small>{operatorSummary.reviewServersLabel}</small>
+            </li>
+            <li>
+              <span>Reuse policy</span>
+              <strong>{operatorSummary.reusePoliciesLabel}</strong>
+              <small>From trusted registry server records</small>
+            </li>
+          </ul>
+        </div>
         <div className="summary-grid">
           <Metric label="Account ID" value={props.profile.account.account_id} />
           <Metric label="Risk" value={props.profile.account.risk_level} />

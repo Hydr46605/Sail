@@ -60,7 +60,7 @@ function releaseReadme(manifest) {
   return [
     `${manifest.name} ${manifest.label}`,
     "",
-    "This is an alpha bundle for testing Sail Generic and staging Sail Global.",
+    "This is an alpha bundle for testing Sail.",
     "Do not treat it as a stable production authority.",
     "",
     "Files:",

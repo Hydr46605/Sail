@@ -8,3 +8,25 @@ dist/
 node_modules/
 out/
 *.log
+
+# Local/private files that must not be published from Sail Generic.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jwk
+*.map
+secrets/
+runtime/
+.sail-private/
+specs/
+plans/
+agentic/
+agents/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+*.local.md

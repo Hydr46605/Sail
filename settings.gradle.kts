@@ -11,6 +11,7 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         maven("https://repo.papermc.io/repository/maven-public/")
+        maven("https://maven.elytrium.net/repo/")
     }
 }
 
@@ -18,4 +19,3 @@ rootProject.name = "sail"
 
 include(":minecraft:gateway")
 include(":minecraft:companion")
-

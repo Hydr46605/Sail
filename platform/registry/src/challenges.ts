@@ -486,6 +486,7 @@ function serializeChallenge(challenge: PendingChallenge): ChallengeStatusRespons
     protocol_version: "sail-protocol-v1",
     challenge_id: challenge.challengeId,
     status: challenge.status,
+    mode: challenge.mode,
     expires_at: challenge.expiresAt.toISOString(),
     ...(challenge.completedAt ? { completed_at: challenge.completedAt.toISOString() } : {}),
     ...(challenge.identity ? { identity: challenge.identity } : {}),

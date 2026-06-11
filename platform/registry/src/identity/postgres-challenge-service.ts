@@ -730,6 +730,7 @@ export class PostgresChallengeService implements ChallengeService {
       protocol_version: "sail-protocol-v1" as const,
       challenge_id: challengePublicId(challenge.id),
       status: challenge.status,
+      mode: challenge.mode,
       expires_at: challenge.expires_at.toISOString(),
     };
 

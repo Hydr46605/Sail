@@ -55,6 +55,7 @@ export interface ChallengeStatusResponse {
   protocol_version: "sail-protocol-v1";
   challenge_id: string;
   status: ChallengeStatus;
+  mode: ChallengeMode;
   expires_at: string;
   completed_at?: string;
   identity?: CompletedIdentity;

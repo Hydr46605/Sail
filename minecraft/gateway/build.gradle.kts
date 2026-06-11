@@ -5,6 +5,7 @@ plugins {
 import org.gradle.api.file.DuplicatesStrategy
 
 val sailJavaVersion: String by project
+val sailLimboApiVersion: String by project
 val sailVelocityApiVersion: String by project
 
 java {
@@ -33,6 +34,7 @@ tasks.jar {
 
 dependencies {
     compileOnly("com.velocitypowered:velocity-api:$sailVelocityApiVersion")
+    compileOnly("net.elytrium.limboapi:api:$sailLimboApiVersion")
     annotationProcessor("com.velocitypowered:velocity-api:$sailVelocityApiVersion")
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")

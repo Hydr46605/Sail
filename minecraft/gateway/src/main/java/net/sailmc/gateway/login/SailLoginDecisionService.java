@@ -47,10 +47,6 @@ public final class SailLoginDecisionService {
     }
 
     public LoginDecision decide(String username, String connectionId) throws IOException, InterruptedException {
-        if (config.loginFlow().unauthenticatedAction() == SailGatewayConfig.UnauthenticatedAction.LIMBO) {
-            return LoginDecision.kick(KickMessageRenderer.unsupportedLimboMode());
-        }
-
         String canonicalName = username.toLowerCase(Locale.ROOT);
         LocalSessionProfile activeSession = activeSessions.get(canonicalName);
         if (activeSession != null) {
@@ -81,7 +77,7 @@ public final class SailLoginDecisionService {
                     config.server().serverId(),
                     username,
                     connectionId,
-                    "kick"));
+                    challengeMode()));
         } catch (SailRegistryException error) {
             if (error.errorCode().filter("premium_name_required"::equals).isPresent()) {
                 return LoginDecision.requirePremiumAuth();
@@ -94,7 +90,7 @@ public final class SailLoginDecisionService {
             return LoginDecision.kick(KickMessageRenderer.registryUnavailable());
         }
         pendingChallenges.put(canonicalName, challenge);
-        return LoginDecision.kick(KickMessageRenderer.render(challenge));
+        return unauthenticatedDecision(challenge);
     }
 
     private LoginDecision tryResumeCompletedChallenge(String canonicalName, AuthChallengeResponse pendingChallenge)
@@ -141,11 +137,31 @@ public final class SailLoginDecisionService {
         }
 
         if ("pending".equals(status.status())) {
-            return LoginDecision.kick(KickMessageRenderer.render(pendingChallenge));
+            return unauthenticatedDecision(pendingChallenge);
         }
 
         pendingChallenges.remove(canonicalName);
+        if (isLimboBackedMode()) {
+            return LoginDecision.kick(KickMessageRenderer.challengeExpired());
+        }
         return null;
+    }
+
+    private LoginDecision unauthenticatedDecision(AuthChallengeResponse challenge) {
+        if (!isLimboBackedMode()) {
+            return LoginDecision.kick(KickMessageRenderer.render(challenge));
+        }
+        return LoginDecision.waitInLimbo(challenge, KickMessageRenderer.render(challenge));
+    }
+
+    private String challengeMode() {
+        return config.loginFlow().unauthenticatedAction().wireValue();
+    }
+
+    private boolean isLimboBackedMode() {
+        SailGatewayConfig.UnauthenticatedAction action = config.loginFlow().unauthenticatedAction();
+        return action == SailGatewayConfig.UnauthenticatedAction.LIMBO
+                || action == SailGatewayConfig.UnauthenticatedAction.HYBRID;
     }
 
     private LocalProofDecision verifyLocalSessionProof(String canonicalName, LocalSessionProfile profile) {

@@ -9,7 +9,8 @@ bundle, PostgreSQL, and release packaging.
 - Protocol contracts in `protocol/`.
 - Registry API in `platform/registry`.
 - PostgreSQL migrations and database tests.
-- Velocity gateway with signed Sail session verification.
+- Velocity gateway with signed Sail session verification, kick/rejoin auth,
+  LimboAPI-backed limbo auth, and hybrid premium/local policy.
 - Paper companion with identity diagnostics and admin commands.
 - Console alpha in `platform/console`.
 - Local Docker PostgreSQL setup in `ops/local/compose.yml`.
@@ -21,6 +22,11 @@ bundle, PostgreSQL, and release packaging.
 ## Alpha Limits
 
 - The built-in dev signing key is for local development only.
+- Limbo and hybrid gateway modes require the LimboAPI Velocity plugin at
+  runtime. The gateway refuses to initialize those modes when LimboAPI is
+  missing or incompatible.
+- Public/global gateway deployments must use pinned trusted keys. Unpinned
+  behavior is local-development only.
 - OAuth is present for local/dev and Discord-backed flows; production provider
   setup is deployment-specific.
 - The Paper companion is not an authentication layer.
@@ -53,4 +59,3 @@ Use full smoke only when the local Minecraft runtime cost is acceptable:
 ```sh
 node ops/local/smoke-local.mjs
 ```
-

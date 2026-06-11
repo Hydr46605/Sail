@@ -64,9 +64,12 @@ Gateways can pin trusted public keys in their Velocity config. Keep pinning on
 for real networks. With pinning enabled, a compromised registry URL alone is not
 enough; the attacker also needs a trusted private key.
 
+Unpinned gateway verification is a local-development posture only. Public or
+global registry deployments must enable pinning and load trusted public keys so
+the gateway fails closed when key material is missing.
+
 ## Backend Boundary
 
 The Paper companion must not receive session tokens. It only receives the
 already-verified `sail.identity.v1` metadata forwarded by Velocity. The
 companion parser rejects payloads that include `session_token`.
-

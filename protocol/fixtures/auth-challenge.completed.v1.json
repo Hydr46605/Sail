@@ -2,6 +2,7 @@
   "protocol_version": "sail-protocol-v1",
   "challenge_id": "ch_local_0123456789abcdef",
   "status": "completed",
+  "mode": "kick",
   "expires_at": "2026-06-06T00:15:00Z",
   "completed_at": "2026-06-06T00:10:30Z",
   "identity": {
@@ -16,4 +17,3 @@
     "session_token": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImRldi1lczI1Ni0yMDI2LTA2In0.eyJzY29wZSI6Im1pbmVjcmFmdF9sb2dpbiJ9.signature"
   }
 }
-

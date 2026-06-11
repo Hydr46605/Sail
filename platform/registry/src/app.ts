@@ -217,6 +217,7 @@ const challengeStatusResponseSchema = Type.Object(
       Type.Literal("revoked"),
       Type.Literal("denied"),
     ]),
+    mode: Type.Union([Type.Literal("kick"), Type.Literal("limbo"), Type.Literal("hybrid")]),
     expires_at: Type.String({ format: "date-time" }),
     completed_at: Type.Optional(Type.String({ format: "date-time" })),
     identity: Type.Optional(completedIdentitySchema),

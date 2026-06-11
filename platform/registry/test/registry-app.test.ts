@@ -319,6 +319,43 @@ describe("Sail registry skeleton", () => {
       protocol_version: "sail-protocol-v1",
       challenge_id: created.challenge_id,
       status: "pending",
+      mode: "kick",
+      expires_at: created.expires_at,
+    });
+  });
+
+  test.each(["limbo", "hybrid"] as const)("round-trips %s Minecraft auth challenge mode", async (mode) => {
+    const app = createTestApp();
+
+    const createResponse = await app.inject({
+      method: "POST",
+      url: "/v1/minecraft/auth-challenges",
+      payload: {
+        server_id: "local-survival",
+        username: "Example",
+        connection_id: `velocity-connection-${mode}`,
+        mode,
+      },
+    });
+
+    expect(createResponse.statusCode).toBe(201);
+    const created = createResponse.json<{
+      challenge_id: string;
+      expires_at: string;
+      mode: "limbo" | "hybrid";
+    }>();
+    expect(created.mode).toBe(mode);
+
+    const statusResponse = await app.inject({
+      method: "GET",
+      url: `/v1/minecraft/auth-challenges/${created.challenge_id}`,
+    });
+
+    expect(statusResponse.statusCode).toBe(200);
+    expect(statusResponse.json()).toMatchObject({
+      challenge_id: created.challenge_id,
+      status: "pending",
+      mode,
       expires_at: created.expires_at,
     });
   });

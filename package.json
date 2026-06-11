@@ -7,12 +7,13 @@
   "type": "module",
   "packageManager": "pnpm@10.15.1",
   "scripts": {
+    "public:hygiene": "node tools/verify-public-hygiene.mjs",
     "api:check": "node tools/verify-api-contracts.mjs",
     "version:check": "node tools/verify-versioning.mjs",
     "protocol:check": "node tools/verify-protocol.mjs && pnpm api:check && pnpm version:check",
     "structure:check": "node tools/verify-structure.mjs",
-    "check": "pnpm structure:check && pnpm protocol:check && pnpm -r --if-present run check",
-    "test": "pnpm structure:check && pnpm protocol:check && pnpm -r --if-present run test",
+    "check": "pnpm public:hygiene && pnpm structure:check && pnpm protocol:check && pnpm -r --if-present run check",
+    "test": "pnpm public:hygiene && pnpm structure:check && pnpm protocol:check && pnpm -r --if-present run test",
     "test:db": "pnpm --filter @sail/registry test:db",
     "release:alpha": "pnpm --filter @sail/console build && ./gradlew :minecraft:gateway:build :minecraft:companion:build && node tools/prepare-alpha-release.mjs"
   },

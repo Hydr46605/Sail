@@ -9,7 +9,7 @@ on:
       tag:
         description: Existing alpha tag to publish
         required: true
-        default: v0.1.0-alpha.1
+        default: v0.1.0-alpha.4
 
 permissions:
   contents: write
@@ -109,7 +109,7 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --title "Sail ${VERSION}" \
               --notes-file "$notes" \
-              --latest
+              --prerelease
             gh release upload "$TAG" "${assets[@]}" \
               --repo "$GITHUB_REPOSITORY" \
               --clobber
@@ -118,6 +118,6 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --title "Sail ${VERSION}" \
               --notes-file "$notes" \
-              --latest \
+              --prerelease \
               --verify-tag
           fi

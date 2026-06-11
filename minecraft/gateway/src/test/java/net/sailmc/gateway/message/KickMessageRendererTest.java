@@ -28,4 +28,12 @@ class KickMessageRendererTest {
         assertTrue(message.contains("OAuth"));
         assertFalse(message.toLowerCase().contains("password"));
     }
+
+    @Test
+    void rendersChallengeExpiredMessage() {
+        String message = KickMessageRenderer.challengeExpired();
+
+        assertTrue(message.contains("expired"));
+        assertTrue(message.contains("Join again"));
+    }
 }

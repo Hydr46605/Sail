@@ -14,7 +14,8 @@ class SailStatusRendererTest {
                 true,
                 new SailIdentityRegistry.Snapshot(List.of(), 4, 2, 1, 1),
                 true,
-                false);
+                false,
+                true);
 
         String output = String.join("\n", lines);
         assertTrue(output.contains("Sail Companion: initialized"));
@@ -22,8 +23,25 @@ class SailStatusRendererTest {
         assertTrue(output.contains("Verified: 2"));
         assertTrue(output.contains("Unverified by Sail: 1"));
         assertTrue(output.contains("Malformed Sail identity: 1"));
+        assertTrue(output.contains("Identity source: Velocity forwarded Sail profile property"));
         assertTrue(output.contains("Warning: Paper online-mode appears enabled"));
+        assertTrue(output.contains("Gateway mode: not proven by this plugin"));
         assertTrue(output.contains("Firewall state: not proven by this plugin"));
         assertFalse(output.toLowerCase().contains("firewall is safe"));
+    }
+
+    @Test
+    void suppressesRiskWarningsWhenConfiguredOff() {
+        List<String> lines = SailStatusRenderer.render(
+                true,
+                new SailIdentityRegistry.Snapshot(List.of(), 4, 2, 1, 1),
+                true,
+                false,
+                false);
+
+        String output = String.join("\n", lines);
+        assertFalse(output.contains("Paper online-mode appears enabled"));
+        assertTrue(output.contains("Gateway mode: not proven by this plugin"));
+        assertTrue(output.contains("Firewall state: not proven by this plugin"));
     }
 }

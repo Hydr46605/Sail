@@ -20,10 +20,32 @@ Sail is a Minecraft identity layer for offline-mode networks. It gives players
 a browser-based Sail session instead of a chat password, while keeping
 Mojang/Microsoft ownership as the authority for premium names.
 
-The gateway sits in front of the Paper backend, verifies signed Sail sessions,
-and decides whether a player can use a name on that server. Paper receives
-verified identity metadata for diagnostics and integrations; it does not perform
-the Sail login.
+## The Problem
+
+Offline-mode Minecraft networks are easy to join, but the usual identity model
+is weak. A `/register` and `/login` password flow moves account security into
+chat, creates another password for players to lose or reuse, and still leaves
+server owners with a hard question: who is actually allowed to use a name?
+
+Online-mode servers answer that question through Mojang/Microsoft sessions, but
+that does not cover every network layout. Some communities need offline-mode
+compatibility, Velocity-first routing, or self-hosted identity. Without a clear
+name authority, a local account can also collide with a premium Minecraft name
+and make the server look less trustworthy than it should.
+
+## How Sail Solves It
+
+Sail keeps the login decision at the gateway. A registry proves whether a player
+can use a name, then issues a signed Sail session that Velocity can verify before
+the player reaches the Paper backend. Premium names remain tied to
+Mojang/Microsoft ownership; local Sail identities stay clearly separate instead
+of pretending to be premium accounts.
+
+For players, this means browser-based account access instead of chat passwords.
+For operators, it means the backend receives a verified `sail.identity.v1`
+profile after the gateway has accepted the session. Paper can use that metadata
+for commands, placeholders, diagnostics, and integrations, but it is not the
+authentication layer.
 
 What Sail provides:
 

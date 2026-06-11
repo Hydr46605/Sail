@@ -28,6 +28,7 @@ class SailLookupRendererTest {
         assertTrue(output.contains("Claim type: LOCAL_SOFT"));
         assertTrue(output.contains("Identity type: SAIL_LOCAL"));
         assertTrue(output.contains("Session: sess_local_0123456789abcdef"));
+        assertTrue(output.contains("Boundary: backend-visible identity; gateway remains enforcement"));
         assertTrue(output.contains("Issuer: my-network"));
         assertTrue(output.contains("Key: dev-es256-2026-06"));
     }

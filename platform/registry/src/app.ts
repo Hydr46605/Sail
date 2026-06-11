@@ -937,7 +937,10 @@ function buildConsoleCompletionUrl(
     return undefined;
   }
 
-  const url = new URL("/auth/complete", config.consoleUrl);
+  const url = new URL(config.consoleUrl);
+  if (!url.pathname.endsWith("/") && !/\.[^/]+$/u.test(url.pathname)) {
+    url.pathname = `${url.pathname}/`;
+  }
   url.hash =
     `session_token=${encodeURIComponent(completed.identity.session_token)}` +
     `&session_id=${encodeURIComponent(completed.identity.session_id)}`;

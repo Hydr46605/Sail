@@ -558,7 +558,7 @@ describe("Sail registry skeleton", () => {
     expect(callback.statusCode).toBe(200);
     expect(callback.headers["content-type"]).toContain("text/html");
     expect(callback.body).toContain("authentication complete");
-    expect(callback.body).toContain("/auth/complete#session_token=");
+    expect(callback.body).toContain("/#session_token=");
     expect(callback.body).not.toContain("session_token_hash");
     expect(callback.body).not.toContain("_hash");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
@@ -585,7 +585,7 @@ describe("Sail registry skeleton", () => {
     });
     expect(status.identity.account_id).toMatch(/^acct_[a-f0-9]{24}$/u);
     expect(callback.body).toContain(
-      `href="http://127.0.0.1:5173/auth/complete#session_token=${encodeURIComponent(status.identity.session_token)}&amp;session_id=${encodeURIComponent(status.identity.session_id)}"`,
+      `href="http://127.0.0.1:5173/#session_token=${encodeURIComponent(status.identity.session_token)}&amp;session_id=${encodeURIComponent(status.identity.session_id)}"`,
     );
   });
 
@@ -648,7 +648,7 @@ describe("Sail registry skeleton", () => {
     expect(completion.statusCode).toBe(200);
     expect(completion.headers["content-type"]).toContain("text/html");
     expect(completion.body).toContain("authentication complete");
-    expect(completion.body).toContain("/auth/complete#session_token=");
+    expect(completion.body).toContain("/#session_token=");
     expect(completion.body).not.toContain("session_token_hash");
     expect(completion.body).not.toContain("_hash");
 
@@ -663,8 +663,33 @@ describe("Sail registry skeleton", () => {
       };
     }>();
     expect(completion.body).toContain(
-      `href="http://127.0.0.1:5173/auth/complete#session_token=${encodeURIComponent(status.identity.session_token)}&amp;session_id=${encodeURIComponent(status.identity.session_id)}"`,
+      `href="http://127.0.0.1:5173/#session_token=${encodeURIComponent(status.identity.session_token)}&amp;session_id=${encodeURIComponent(status.identity.session_id)}"`,
     );
+  });
+
+  test("keeps console handoff links under a configured console path", async () => {
+    const app = createDevOAuthApp({
+      SAIL_CONSOLE_URL: "https://global.example/console/",
+    });
+    const createResponse = await app.inject({
+      method: "POST",
+      url: "/v1/minecraft/auth-challenges",
+      payload: {
+        server_id: "local-survival",
+        username: "Example",
+        connection_id: "velocity-connection-console-path",
+        mode: "kick",
+      },
+    });
+    const created = createResponse.json<{ challenge_id: string; code: string }>();
+
+    const completion = await app.inject({
+      method: "GET",
+      url: `/auth/dev/complete?code=${created.code}&provider_subject=dev-user&provider_username=DevUser`,
+    });
+
+    expect(completion.statusCode).toBe(200);
+    expect(completion.body).toContain("https://global.example/console/#session_token=");
   });
 
   test("rejects local auth challenge creation for a premium Minecraft name", async () => {

@@ -1,0 +1,109 @@
+name: Sail Alpha Release
+
+on:
+  push:
+    tags:
+      - "v*-alpha*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing alpha tag to publish
+        required: true
+        default: v0.1.0-alpha.1
+
+permissions:
+  contents: write
+
+jobs:
+  alpha-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag
+        id: release-tag
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+
+          case "$tag" in
+            v*-alpha*) ;;
+            *) echo "Release tag must match v*-alpha*" >&2; exit 1 ;;
+          esac
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release-tag.outputs.tag }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.15.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build alpha bundle
+        run: pnpm release:alpha
+
+      - name: Package release assets
+        shell: bash
+        env:
+          VERSION: ${{ steps.release-tag.outputs.version }}
+        run: |
+          bundle="sail-${VERSION}.tar.gz"
+          checksums="sail-${VERSION}.sha256"
+
+          tar -C dist/release -czf "dist/${bundle}" .
+
+          (
+            cd dist
+            sha256sum \
+              "$bundle" \
+              release/sail-release.json \
+              release/README.txt \
+              release/files/* \
+              > "$checksums"
+          )
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release-tag.outputs.tag }}
+          VERSION: ${{ steps.release-tag.outputs.version }}
+        run: |
+          notes="release/notes/${TAG}.md"
+          if [[ ! -f "$notes" ]]; then
+            echo "Missing release notes: $notes" >&2
+            exit 1
+          fi
+
+          gh release create "$TAG" \
+            "dist/sail-${VERSION}.tar.gz" \
+            "dist/sail-${VERSION}.sha256" \
+            dist/release/sail-release.json \
+            dist/release/README.txt \
+            dist/release/files/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Sail ${VERSION}" \
+            --notes-file "$notes" \
+            --prerelease \
+            --verify-tag

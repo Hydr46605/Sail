@@ -73,6 +73,10 @@ pnpm release:alpha
 The command builds the console, gateway jar, companion jar, and writes
 `dist/release/sail-release.json` with hashes for the produced files.
 
+Alpha GitHub releases are tag-driven. Push an annotated tag that matches
+`v*-alpha*`; the release workflow builds the bundle, packages checksums, and
+publishes a prerelease.
+
 ## Local Artifacts
 
 Generated local runtime files are ignored by Git:
@@ -93,4 +97,3 @@ Useful cleanup commands:
 just runtime-artifacts
 just runtime-clean-ui
 ```
-

@@ -21,7 +21,7 @@ const clientVersion = process.env.SAIL_SMOKE_CLIENT_VERSION ?? "1.21.11";
 const smokePremiumNames = parseSmokePremiumNames(process.env.SAIL_SMOKE_PREMIUM_NAMES ?? "Notch");
 const skipServers = process.argv.includes("--skip-servers");
 const manualClient = process.argv.includes("--manual-client");
-const userAgent = "Sail local smoke/0.1.0 (https://github.com/BerylLabs/Sail)";
+const userAgent = "Sail local smoke/0.1.0 (https://github.com/Hydr46605/Sail)";
 
 const processes = [];
 const servers = [];

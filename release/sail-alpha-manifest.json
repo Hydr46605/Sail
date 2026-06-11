@@ -1,20 +1,17 @@
 {
   "name": "Sail",
   "channel": "alpha",
-  "version": "0.1.0",
-  "label": "0.1.0-alpha",
+  "version": "0.1.0-alpha.1",
+  "label": "0.1.0-alpha.1",
   "protocol_version": "sail-protocol-v1",
-  "homepage": "https://sailmc.net",
-  "console_url": "https://sailmc.net/console",
-  "api_url": "https://api.sailmc.net",
-  "repository": "https://github.com/BerylLabs/Sail",
+  "repository": "https://github.com/Hydr46605/Sail",
   "artifacts": [
     {
       "id": "gateway",
       "name": "Sail Gateway",
       "kind": "velocity-plugin",
       "source": "minecraft/gateway/build/libs/gateway-0.1.0-SNAPSHOT.jar",
-      "file": "sail-gateway-0.1.0-alpha.jar",
+      "file": "sail-gateway-0.1.0-alpha.1.jar",
       "description": "Velocity enforcement plugin for Sail login decisions."
     },
     {
@@ -22,7 +19,7 @@
       "name": "Sail Companion",
       "kind": "paper-plugin",
       "source": "minecraft/companion/build/libs/companion-0.1.0-SNAPSHOT.jar",
-      "file": "sail-companion-0.1.0-alpha.jar",
+      "file": "sail-companion-0.1.0-alpha.1.jar",
       "description": "Paper diagnostics plugin for Sail identity visibility."
     },
     {

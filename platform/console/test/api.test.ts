@@ -37,6 +37,24 @@ describe("Sail console API client", () => {
     });
   });
 
+  test("rejects blank session tokens before sending requests", async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+    const client = createSailConsoleApiClient({
+      baseUrl: "http://127.0.0.1:8787",
+      fetchImpl,
+    });
+
+    await expect(client.getConsoleProfile("  ")).rejects.toMatchObject({
+      status: 401,
+      code: "missing_session_token",
+    } satisfies Partial<SailConsoleApiError>);
+    await expect(client.revokeConsoleSession("", "sess_123")).rejects.toMatchObject({
+      status: 401,
+      code: "missing_session_token",
+    } satisfies Partial<SailConsoleApiError>);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   test("creates a console auth challenge for Discord onboarding", async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       Response.json({

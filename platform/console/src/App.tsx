@@ -942,14 +942,21 @@ function ErrorBanner(props: { error: unknown }) {
   );
 }
 
-function formatError(error: unknown): string {
+export function formatError(error: unknown): string {
   if (error instanceof SailConsoleApiError) {
-    return `${error.code}: ${error.message}`;
+    return redactSensitiveText(`${error.code}: ${error.message}`);
   }
   if (error instanceof Error) {
-    return error.message;
+    return redactSensitiveText(error.message);
   }
   return "Unknown error";
+}
+
+function redactSensitiveText(value: string): string {
+  return value
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+={0,2}/gu, "Bearer [redacted]")
+    .replace(/([#?&]session_token=)[^&#\s]+/gu, "$1[redacted]")
+    .replace(/(\bsessionToken["']?\s*[:=]\s*["']?)[^"',\s&]+/gu, "$1[redacted]");
 }
 
 function formatDateTime(value: string | null): string {

@@ -17,6 +17,8 @@ public final class SailBackendDiagnostics {
         lines.add("Verified Sail identities: " + verifiedPlayers);
         lines.add("Unverified by Sail: " + unverifiedPlayers);
         lines.add("Malformed Sail identity: " + malformedPlayers);
+        lines.add("Backend online-mode: " + (serverOnlineMode ? "enabled" : "disabled"));
+        lines.add("Forwarding signal: " + (forwardingSecretFileDetected ? "detected" : "not detected"));
 
         if (warnOnDirectJoinRisk && serverOnlineMode) {
             lines.add("Warning: Paper online-mode appears enabled; Sail expects a backend behind Velocity forwarding.");
@@ -29,6 +31,7 @@ public final class SailBackendDiagnostics {
         }
 
         lines.add("Forwarding secret file: " + (forwardingSecretFileDetected ? "detected" : "not detected"));
+        lines.add("Gateway enforcement: not proven by Paper; inspect Velocity /sail status.");
         lines.add("Gateway mode: not proven by this plugin; inspect Velocity /sail status for kick, limbo, or hybrid.");
         lines.add("Firewall state: not proven by this plugin");
         return List.copyOf(lines);

@@ -37,6 +37,7 @@ public final class SailLookupRenderer {
         lines.add("Claim type: " + identity.claimType());
         lines.add("Identity type: " + identity.identityType());
         lines.add("Session: " + identity.sessionId());
+        lines.add("Boundary: backend-visible identity; gateway remains enforcement.");
         if (identity.issuer() != null && !identity.issuer().isBlank()) {
             lines.add("Issuer: " + identity.issuer());
         }

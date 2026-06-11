@@ -96,14 +96,28 @@ jobs:
             exit 1
           fi
 
-          gh release create "$TAG" \
-            "dist/sail-${VERSION}.tar.gz" \
-            "dist/sail-${VERSION}.sha256" \
-            dist/release/sail-release.json \
-            dist/release/README.txt \
-            dist/release/files/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Sail ${VERSION}" \
-            --notes-file "$notes" \
-            --latest \
-            --verify-tag
+          assets=(
+            "dist/sail-${VERSION}.tar.gz"
+            "dist/sail-${VERSION}.sha256"
+            dist/release/sail-release.json
+            dist/release/README.txt
+            dist/release/files/*
+          )
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Sail ${VERSION}" \
+              --notes-file "$notes" \
+              --latest
+            gh release upload "$TAG" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$TAG" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Sail ${VERSION}" \
+              --notes-file "$notes" \
+              --latest \
+              --verify-tag
+          fi

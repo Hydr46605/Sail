@@ -1,21 +1,21 @@
 package net.sailmc.companion.identity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 
 public record SailPaperIdentity(
         String schema,
-        @JsonProperty("registry_id") String registryId,
-        @JsonProperty("server_id") String serverId,
-        @JsonProperty("session_id") String sessionId,
-        @JsonProperty("account_id") String accountId,
-        @JsonProperty("minecraft_identity_id") String minecraftIdentityId,
-        @JsonProperty("name_claim_id") String nameClaimId,
-        @JsonProperty("canonical_name") String canonicalName,
-        @JsonProperty("display_name") String displayName,
-        @JsonProperty("minecraft_uuid") String minecraftUuid,
-        @JsonProperty("claim_type") String claimType,
-        @JsonProperty("identity_type") String identityType,
+        @SerializedName("registry_id") String registryId,
+        @SerializedName("server_id") String serverId,
+        @SerializedName("session_id") String sessionId,
+        @SerializedName("account_id") String accountId,
+        @SerializedName("minecraft_identity_id") String minecraftIdentityId,
+        @SerializedName("name_claim_id") String nameClaimId,
+        @SerializedName("canonical_name") String canonicalName,
+        @SerializedName("display_name") String displayName,
+        @SerializedName("minecraft_uuid") String minecraftUuid,
+        @SerializedName("claim_type") String claimType,
+        @SerializedName("identity_type") String identityType,
         String issuer,
-        @JsonProperty("key_id") String keyId) {
+        @SerializedName("key_id") String keyId) {
     public static final String SCHEMA = "sail-paper-identity-v1";
 }

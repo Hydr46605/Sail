@@ -27,6 +27,7 @@
     "test:db": "vitest run --no-file-parallelism --maxWorkers=1 --maxConcurrency=1 test/db-types.test.ts test/server-records.test.ts test/signing-key-store.test.ts test/postgres-challenge-service.test.ts test/registry-app-postgres.test.ts"
   },
   "dependencies": {
+    "@fastify/rate-limit": "^10.3.0",
     "@sinclair/typebox": "^0.34.41",
     "fastify": "^5.6.2",
     "jose": "^6.1.3",

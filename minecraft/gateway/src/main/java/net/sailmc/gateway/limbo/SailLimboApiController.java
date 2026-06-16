@@ -121,6 +121,10 @@ public final class SailLimboApiController implements SailLimboController {
     }
 
     private void routePlayer(Player player, boolean spawnWhenWaiting) {
+        if (player.isOnlineMode()) {
+            connectToBackend(player);
+            return;
+        }
         try {
             LoginDecision decision = loginDecisionService.decide(
                     player.getUsername(),
@@ -179,19 +183,28 @@ public final class SailLimboApiController implements SailLimboController {
     private void promoteAndConnect(Player player, LocalSessionProfile profile) {
         stopPolling(player.getUniqueId());
         player.setGameProfileProperties(SailGameProfileFactory.fromLocalSession(profile).getProperties());
+        connectToTargetBackend(player, "Sail backend connection failed. Try again later.");
+    }
+
+    private void connectToBackend(Player player) {
+        stopPolling(player.getUniqueId());
+        connectToTargetBackend(player, "Sail backend connection failed for online-mode player. Try again later.");
+    }
+
+    private void connectToTargetBackend(Player player, String failMessage) {
         Optional<RegisteredServer> backend = proxyServer.getServer(config.backend().targetServer());
         if (backend.isEmpty()) {
             disconnect(player, "Sail backend server is not registered: " + config.backend().targetServer());
             return;
         }
-        player.createConnectionRequest(backend.orElseThrow()).connect().whenComplete((result, error) -> {
+        player.createConnectionRequest(backend.get()).connect().whenComplete((result, error) -> {
             if (error != null) {
                 logger.warn("Sail backend connection failed for {}", player.getUsername(), error);
                 disconnect(player, KickMessageRenderer.registryUnavailable());
                 return;
             }
             if (result == null || !result.isSuccessful()) {
-                disconnect(player, "Sail backend connection failed. Try again later.");
+                disconnect(player, failMessage);
             }
         });
     }

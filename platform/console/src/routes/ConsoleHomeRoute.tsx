@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { createSailConsoleApiClient } from "../api.js";
 import { parseAuthCompleteHash, type StoredConsoleAuth } from "../auth.js";
+import { GetStartedPage } from "../components/GetStartedPage.js";
 import { UnauthenticatedPanel } from "../components/UnauthenticatedPanel.js";
 import { ProfileDashboard } from "../components/ProfileDashboard.js";
 import { useConsoleRuntimeConfig } from "../hooks/useConsoleRuntimeConfig.js";
@@ -18,6 +19,7 @@ export function ConsoleHomeRoute() {
   const queryClient = useQueryClient();
   const [registryUrl, setRegistryUrl] = useState(() => readStoredRegistryUrl(runtimeConfig));
   const [auth, setAuth] = useState<StoredConsoleAuth | undefined>(readStoredAuth);
+  const [started, setStarted] = useState(false);
   const effectiveRegistryUrl = runtimeConfig.registryLocked
     ? runtimeConfig.defaultRegistryUrl
     : registryUrl.trim() || runtimeConfig.defaultRegistryUrl;
@@ -110,6 +112,10 @@ export function ConsoleHomeRoute() {
   };
 
   if (!auth) {
+    if (!started) {
+      return <GetStartedPage onGetStarted={() => setStarted(true)} />;
+    }
+
     return (
       <main className="console-shell">
         <UnauthenticatedPanel

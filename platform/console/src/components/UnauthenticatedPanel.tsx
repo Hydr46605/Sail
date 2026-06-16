@@ -14,6 +14,7 @@ export function UnauthenticatedPanel(props: {
   authChallenge: ConsoleAuthChallengeResponse | undefined;
   authChallengeError: unknown;
   githubAuthUrl: string | undefined;
+  googleAuthUrl: string | undefined;
   isStartingAuth: boolean;
   onRegistryUrlChange: (registryUrl: string) => void;
   onStartAuth: (username: string) => void;
@@ -103,6 +104,12 @@ export function UnauthenticatedPanel(props: {
               <a className="primary-button" href={props.githubAuthUrl} style={{ marginTop: "0.5rem" }}>
                 <ExternalLink aria-hidden="true" size={18} />
                 <span>Continue with GitHub</span>
+              </a>
+            ) : null}
+            {props.googleAuthUrl ? (
+              <a className="primary-button" href={props.googleAuthUrl} style={{ marginTop: "0.5rem" }}>
+                <ExternalLink aria-hidden="true" size={18} />
+                <span>Continue with Google</span>
               </a>
             ) : null}
           </div>

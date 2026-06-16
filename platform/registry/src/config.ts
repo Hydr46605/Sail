@@ -50,6 +50,7 @@ export interface SailRegistryConfig {
   devOAuthEnabled: boolean;
   discordOAuth: DiscordOAuthConfig;
   githubOAuth: GitHubOAuthConfig;
+  googleOAuth: GoogleOAuthConfig;
   defaultServer: DefaultServerConfig;
 }
 
@@ -74,6 +75,16 @@ export interface DiscordOAuthConfig {
 }
 
 export interface GitHubOAuthConfig {
+  enabled: boolean;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  authorizeUrl: string;
+  tokenUrl: string;
+  userUrl: string;
+}
+
+export interface GoogleOAuthConfig {
   enabled: boolean;
   clientId: string;
   clientSecret: string;
@@ -339,6 +350,7 @@ export function loadRegistryConfig(env: Env = process.env): SailRegistryConfig {
   const consoleUrl = readOptionalHttpUrl(env, "SAIL_CONSOLE_URL");
   const discordOAuth = readDiscordOAuthConfig(env, apiUrl);
   const githubOAuth = readGitHubOAuthConfig(env, apiUrl);
+  const googleOAuth = readGoogleOAuthConfig(env, apiUrl);
   const stateBackend = readRegistryStateBackend(env);
   const trustStatus = readTrustStatus(env);
   const signingKey = readSigningKeyConfig(env, { stateBackend, trustStatus });
@@ -375,6 +387,7 @@ export function loadRegistryConfig(env: Env = process.env): SailRegistryConfig {
     devOAuthEnabled: readBoolean(env, "SAIL_OAUTH_DEV_ENABLED", false),
     discordOAuth,
     githubOAuth,
+    googleOAuth,
     defaultServer: readDefaultServerConfig(env),
   };
 }
@@ -414,5 +427,24 @@ function readGitHubOAuthConfig(env: Env, apiUrl: string): GitHubOAuthConfig {
     authorizeUrl: readString(env, "SAIL_OAUTH_GITHUB_AUTHORIZE_URL", "https://github.com/login/oauth/authorize"),
     tokenUrl: readString(env, "SAIL_OAUTH_GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token"),
     userUrl: readString(env, "SAIL_OAUTH_GITHUB_USER_URL", "https://api.github.com/user"),
+  };
+}
+
+function readGoogleOAuthConfig(env: Env, apiUrl: string): GoogleOAuthConfig {
+  const enabled = readBoolean(env, "SAIL_OAUTH_GOOGLE_ENABLED", false);
+  const clientId = readOptionalString(env, "SAIL_OAUTH_GOOGLE_CLIENT_ID") ?? "";
+  const clientSecret = readOptionalString(env, "SAIL_OAUTH_GOOGLE_CLIENT_SECRET") ?? "";
+  if (enabled && (!clientId || !clientSecret)) {
+    throw new Error("Google OAuth requires SAIL_OAUTH_GOOGLE_CLIENT_ID and SAIL_OAUTH_GOOGLE_CLIENT_SECRET");
+  }
+
+  return {
+    enabled,
+    clientId,
+    clientSecret,
+    redirectUri: readString(env, "SAIL_OAUTH_GOOGLE_REDIRECT_URI", `${apiUrl}/auth/google/callback`),
+    authorizeUrl: readString(env, "SAIL_OAUTH_GOOGLE_AUTHORIZE_URL", "https://accounts.google.com/o/oauth2/v2/auth"),
+    tokenUrl: readString(env, "SAIL_OAUTH_GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token"),
+    userUrl: readString(env, "SAIL_OAUTH_GOOGLE_USER_URL", "https://www.googleapis.com/oauth2/v2/userinfo"),
   };
 }

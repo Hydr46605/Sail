@@ -14,7 +14,7 @@ import {
   type SessionVerificationInput,
 } from "./identity/challenge-service.js";
 import type { SailRegistryConfig } from "./config.js";
-import type { DiscordOAuthConfig, GitHubOAuthConfig } from "./config.js";
+import type { DiscordOAuthConfig, GitHubOAuthConfig, GoogleOAuthConfig } from "./config.js";
 import { createSailError } from "./identity/challenge-utils.js";
 import { loadRegistryConfig } from "./config.js";
 
@@ -388,6 +388,14 @@ const githubCallbackQuerySchema = Type.Object(
   { additionalProperties: false },
 );
 
+const googleCallbackQuerySchema = Type.Object(
+  {
+    code: Type.String({ minLength: 1 }),
+    state: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+
 const devOAuthCompletionQuerySchema = Type.Object(
   {
     code: Type.String({ minLength: 1 }),
@@ -661,6 +669,88 @@ export function buildRegistryApp(
           provider: "github",
           provider_subject: githubUser.id,
           provider_username: githubUser.displayName,
+        });
+        return reply
+          .type("text/html")
+          .send(renderAuthCompletionPage(config, completed, "Sail authentication complete"));
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.get<{ Querystring: { code: string } }>(
+    "/auth/google/login",
+    {
+      config: {
+        rateLimit: { max: 10, timeWindow: "1 minute" },
+      },
+      schema: {
+        querystring: minecraftAuthQuerySchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const challenge = await challenges.getChallengeByCode(request.query.code);
+        if (challenge.status !== "pending") {
+          return reply
+            .code(410)
+            .type("text/plain")
+            .send("This Sail login code is no longer pending. Join again to get a new code.");
+        }
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+
+      if (!config.googleOAuth.enabled) {
+        return reply
+          .code(503)
+          .type("text/plain")
+          .send("Google OAuth is not configured for this Sail registry.");
+      }
+
+      deleteExpiredOAuthStates(oauthStates);
+      const state = `oauth_${randomToken(24)}`;
+      oauthStates.set(state, {
+        minecraftCode: request.query.code,
+        expiresAt: Date.now() + 180_000,
+      });
+      return reply.redirect(buildGoogleAuthorizeUrl(config.googleOAuth, state).toString(), 302);
+    },
+  );
+
+  app.get<{ Querystring: { code: string; state: string } }>(
+    "/auth/google/callback",
+    {
+      config: {
+        rateLimit: { max: 20, timeWindow: "1 minute" },
+      },
+      schema: {
+        querystring: googleCallbackQuerySchema,
+      },
+    },
+    async (request, reply) => {
+      const state = oauthStates.get(request.query.state);
+      oauthStates.delete(request.query.state);
+      if (!state) {
+        return reply.code(400).type("text/plain").send("Invalid Sail OAuth state.");
+      }
+      if (state.expiresAt <= Date.now()) {
+        return reply.code(410).type("text/plain").send("This Sail OAuth state expired. Join again to get a new code.");
+      }
+
+      try {
+        const googleUser = await fetchGoogleUser(config.googleOAuth, request.query.code, oauthFetch);
+        const completed = await challenges.completeCodeWithOAuth(state.minecraftCode, {
+          provider: "google",
+          provider_subject: googleUser.id,
+          provider_username: googleUser.displayName,
         });
         return reply
           .type("text/html")
@@ -997,6 +1087,11 @@ interface GitHubUser {
   displayName: string;
 }
 
+interface GoogleUser {
+  id: string;
+  displayName: string;
+}
+
 async function fetchDiscordUser(
   config: DiscordOAuthConfig,
   code: string,
@@ -1123,6 +1218,66 @@ function buildGitHubAuthorizeUrl(config: GitHubOAuthConfig, state: string): URL 
   url.searchParams.set("scope", "read:user");
   url.searchParams.set("prompt", "select_account");
   url.searchParams.set("state", state);
+  return url;
+}
+
+async function fetchGoogleUser(
+  config: GoogleOAuthConfig,
+  code: string,
+  fetchImpl: typeof fetch,
+): Promise<GoogleUser> {
+  const tokenBody = new URLSearchParams({
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: config.redirectUri,
+  });
+  const tokenResponse = await fetchImpl(config.tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: tokenBody,
+  });
+  if (!tokenResponse.ok) {
+    throw new Error(`Google token exchange failed with HTTP ${tokenResponse.status}`);
+  }
+  const token = await tokenResponse.json() as { access_token?: unknown };
+  if (typeof token.access_token !== "string" || token.access_token.length === 0) {
+    throw new Error("Google token response did not include access_token");
+  }
+
+  const userResponse = await fetchImpl(config.userUrl, {
+    headers: {
+      Authorization: `Bearer ${token.access_token}`,
+    },
+  });
+  if (!userResponse.ok) {
+    throw new Error(`Google user lookup failed with HTTP ${userResponse.status}`);
+  }
+  const user = await userResponse.json() as { id?: unknown; sub?: unknown; name?: unknown };
+  const id = typeof user.id === "string" && user.id.length > 0
+    ? user.id
+    : typeof user.sub === "string" && user.sub.length > 0
+      ? user.sub
+      : "";
+  if (!id) {
+    throw new Error("Google user response did not include id or sub");
+  }
+
+  const displayName = typeof user.name === "string" && user.name.length > 0 ? user.name : id;
+  return { id, displayName };
+}
+
+function buildGoogleAuthorizeUrl(config: GoogleOAuthConfig, state: string): URL {
+  const url = new URL(config.authorizeUrl);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("client_id", config.clientId);
+  url.searchParams.set("redirect_uri", config.redirectUri);
+  url.searchParams.set("scope", "openid email profile");
+  url.searchParams.set("state", state);
+  url.searchParams.set("access_type", "offline");
   return url;
 }
 

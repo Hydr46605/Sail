@@ -129,6 +129,11 @@ export function ConsoleHomeRoute() {
               ? `${effectiveRegistryUrl}/auth/github/login?code=${encodeURIComponent(authChallengeMutation.data.code)}`
               : undefined
           }
+          googleAuthUrl={
+            authChallengeMutation.data
+              ? `${effectiveRegistryUrl}/auth/google/login?code=${encodeURIComponent(authChallengeMutation.data.code)}`
+              : undefined
+          }
           isStartingAuth={authChallengeMutation.isPending}
           onRegistryUrlChange={updateRegistryUrl}
           onStartAuth={(username) => authChallengeMutation.mutate(username)}

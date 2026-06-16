@@ -13,6 +13,7 @@ export function UnauthenticatedPanel(props: {
   registryLocked: boolean;
   authChallenge: ConsoleAuthChallengeResponse | undefined;
   authChallengeError: unknown;
+  githubAuthUrl: string | undefined;
   isStartingAuth: boolean;
   onRegistryUrlChange: (registryUrl: string) => void;
   onStartAuth: (username: string) => void;
@@ -98,6 +99,12 @@ export function UnauthenticatedPanel(props: {
               <ExternalLink aria-hidden="true" size={18} />
               <span>Continue with Discord</span>
             </a>
+            {props.githubAuthUrl ? (
+              <a className="primary-button" href={props.githubAuthUrl} style={{ marginTop: "0.5rem" }}>
+                <ExternalLink aria-hidden="true" size={18} />
+                <span>Continue with GitHub</span>
+              </a>
+            ) : null}
           </div>
         ) : null}
         {props.authChallengeError ? <ErrorBanner error={props.authChallengeError} /> : null}

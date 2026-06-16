@@ -1,0 +1,189 @@
+import { Activity, KeyRound, Link2, Server } from "lucide-react";
+import type { StoredConsoleAuth } from "../auth.js";
+import type { ConsoleProfileResponse } from "../types.js";
+import { countActiveSessions, formatProviderLabel, getOperatorSummary } from "../utils/helpers.js";
+import { Metric } from "./Metric.js";
+import { SessionRow } from "./SessionRow.js";
+import { StatusPill } from "./StatusPill.js";
+
+export function DashboardContent(props: {
+  auth: StoredConsoleAuth;
+  profile: ConsoleProfileResponse;
+  revokingSessionId: string | undefined;
+  isRevoking: boolean;
+  onRevoke: (sessionId: string) => void;
+}) {
+  const operatorSummary = getOperatorSummary(props.profile);
+
+  return (
+    <>
+      <section className="console-section" aria-labelledby="account-heading">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Account</span>
+            <h2 id="account-heading">Identity state</h2>
+          </div>
+          <StatusPill status={props.profile.account.status} />
+        </div>
+        <ul className="trust-summary" aria-label="Trust summary">
+          <li><strong>{props.profile.names.length} active names</strong></li>
+          <li><strong>{props.profile.trusted_servers.length} trusted servers</strong></li>
+          <li><strong>{countActiveSessions(props.profile)} active sessions</strong></li>
+        </ul>
+        <div className="operator-summary-panel">
+          <span className="section-kicker">Operator summary</span>
+          <ul className="operator-summary" aria-label="Operator summary">
+            <li>
+              <span>Gateway sessions</span>
+              <strong>{operatorSummary.activeSessionsLabel}</strong>
+              <small>{operatorSummary.inactiveSessionsLabel}</small>
+            </li>
+            <li>
+              <span>Server trust</span>
+              <strong>{operatorSummary.activeServersLabel}</strong>
+              <small>{operatorSummary.reviewServersLabel}</small>
+            </li>
+            <li>
+              <span>Reuse policy</span>
+              <strong>{operatorSummary.reusePoliciesLabel}</strong>
+              <small>From trusted registry server records</small>
+            </li>
+          </ul>
+        </div>
+        <div className="summary-grid">
+          <Metric label="Account ID" value={props.profile.account.account_id} />
+          <Metric label="Risk" value={props.profile.account.risk_level} />
+          <Metric label="Names" value={String(props.profile.names.length)} />
+          <Metric label="Sessions" value={String(countActiveSessions(props.profile))} />
+        </div>
+        <div className="provider-list" aria-label="Linked providers">
+          {props.profile.account.linked_providers.length > 0 ? (
+            props.profile.account.linked_providers.map((provider) => (
+              <span key={`${provider.provider}:${provider.provider_username ?? "null"}`} className="provider-chip">
+                <Link2 aria-hidden="true" size={14} />
+                {formatProviderLabel(provider)}
+              </span>
+            ))
+          ) : (
+            <span className="empty-state">No linked providers</span>
+          )}
+        </div>
+      </section>
+
+      <section className="console-section" aria-labelledby="names-heading">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Names</span>
+            <h2 id="names-heading">Claims</h2>
+          </div>
+          <KeyRound aria-hidden="true" size={20} />
+        </div>
+        <div className="table-scroll">
+          <table className="data-table names-table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Claim</th>
+                <th scope="col">Identity</th>
+                <th scope="col">UUID</th>
+                <th scope="col">Issuer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.profile.names.length > 0 ? (
+                props.profile.names.map((name) => (
+                  <tr key={name.name_claim_id}>
+                    <th scope="row">
+                      <strong>{name.display_name}</strong>
+                    </th>
+                    <td>{name.claim_type}</td>
+                    <td>{name.identity_type}</td>
+                    <td>
+                      <code>{name.minecraft_uuid}</code>
+                    </td>
+                    <td>{name.issuer_registry_id}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td className="empty-state table-empty" colSpan={5}>No Minecraft names yet</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="console-section" aria-labelledby="sessions-heading">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Sessions</span>
+            <h2 id="sessions-heading">Gateway access</h2>
+          </div>
+          <Activity aria-hidden="true" size={20} />
+        </div>
+        <div className="table-scroll">
+          <table className="data-table sessions-table">
+            <thead>
+              <tr>
+                <th scope="col">Server</th>
+                <th scope="col">Status</th>
+                <th scope="col">Expiry</th>
+                <th scope="col">Current</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.profile.sessions.length > 0 ? (
+                props.profile.sessions.map((session) => (
+                  <SessionRow
+                    key={session.session_id}
+                    auth={props.auth}
+                    session={session}
+                    isRevoking={props.isRevoking && props.revokingSessionId === session.session_id}
+                    onRevoke={props.onRevoke}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td className="empty-state table-empty" colSpan={5}>No gateway sessions yet</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="console-section" aria-labelledby="servers-heading">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Servers</span>
+            <h2 id="servers-heading">Trusted registry servers</h2>
+          </div>
+          <Server aria-hidden="true" size={20} />
+        </div>
+        <div className="server-list">
+          {props.profile.trusted_servers.length > 0 ? (
+            props.profile.trusted_servers.map((server) => (
+              <article key={`${server.registry_id}:${server.server_id}`} className="server-card">
+                <div>
+                  <strong>{server.display_name}</strong>
+                  <code>{server.server_id}</code>
+                </div>
+                <div className="server-meta">
+                  <span>{server.registry_mode}</span>
+                  <span>{server.session_reuse_policy}</span>
+                  <span>{server.privacy_mode}</span>
+                  <span>{server.public_listing ? "public" : "private"}</span>
+                  <StatusPill status={server.status} />
+                </div>
+              </article>
+            ))
+          ) : (
+            <span className="empty-state">No trusted servers</span>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}

@@ -2,7 +2,7 @@ package net.sailmc.companion.identity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -13,7 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class SailPaperIdentityParserTest {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Gson GSON = new Gson();
     private static final UUID PLAYER_UUID = UUID.fromString("00000000-0000-4000-8000-000000000001");
 
     private final SailPaperIdentityParser parser = new SailPaperIdentityParser();
@@ -135,9 +135,9 @@ class SailPaperIdentityParserTest {
         return payload;
     }
 
-    private static String encode(Map<String, String> payload) throws Exception {
+    private static String encode(Map<String, String> payload) {
         return Base64.getUrlEncoder()
                 .withoutPadding()
-                .encodeToString(OBJECT_MAPPER.writeValueAsBytes(payload));
+                .encodeToString(GSON.toJson(payload).getBytes(StandardCharsets.UTF_8));
     }
 }

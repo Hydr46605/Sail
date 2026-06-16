@@ -22,8 +22,6 @@ tasks.withType<Test>().configureEach {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:$sailPaperApiVersion")
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
-
     testImplementation(platform("org.junit:junit-bom:6.1.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.papermc.paper:paper-api:$sailPaperApiVersion")

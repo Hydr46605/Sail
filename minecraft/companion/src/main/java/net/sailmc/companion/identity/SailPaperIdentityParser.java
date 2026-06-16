@@ -1,9 +1,9 @@
 package net.sailmc.companion.identity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.UUID;
 public final class SailPaperIdentityParser {
     public static final String PROPERTY_NAME = "sail.identity.v1";
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Gson GSON = new Gson();
     private static final List<String> REQUIRED_FIELDS = List.of(
             "registry_id",
             "server_id",
@@ -38,14 +38,14 @@ public final class SailPaperIdentityParser {
             return SailIdentityParseResult.malformed("invalid_base64");
         }
 
-        JsonNode root;
+        JsonObject root;
         try {
-            root = OBJECT_MAPPER.readTree(new String(jsonBytes, StandardCharsets.UTF_8));
-        } catch (JsonProcessingException error) {
+            root = GSON.fromJson(new String(jsonBytes, StandardCharsets.UTF_8), JsonObject.class);
+        } catch (JsonSyntaxException error) {
             return SailIdentityParseResult.malformed("invalid_json");
         }
 
-        if (!root.isObject()) {
+        if (root == null) {
             return SailIdentityParseResult.malformed("invalid_json");
         }
         if (root.has("session_token")) {
@@ -66,15 +66,18 @@ public final class SailPaperIdentityParser {
         }
 
         try {
-            return SailIdentityParseResult.verified(OBJECT_MAPPER.treeToValue(root, SailPaperIdentity.class));
-        } catch (IOException error) {
+            return SailIdentityParseResult.verified(GSON.fromJson(root, SailPaperIdentity.class));
+        } catch (JsonSyntaxException error) {
             return SailIdentityParseResult.malformed("invalid_json");
         }
     }
 
-    private static String text(JsonNode root, String field) {
-        JsonNode value = root.get(field);
-        return value == null || value.isNull() ? "" : value.asText();
+    private static String text(JsonObject root, String field) {
+        JsonElement value = root.get(field);
+        if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) {
+            return "";
+        }
+        return value.getAsString();
     }
 
     private static boolean isBlank(String value) {

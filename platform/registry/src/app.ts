@@ -1,4 +1,5 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import { Type } from "@sinclair/typebox";
 import { InMemoryChallengeService } from "./challenges.js";
@@ -413,6 +414,19 @@ export function buildRegistryApp(
 
   installConsoleCors(app, config);
 
+  app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+    keyGenerator: (request) =>
+      typeof request.headers["x-api-key"] === "string" ? request.headers["x-api-key"] : request.ip,
+    addHeaders: {
+      "x-ratelimit-limit": true,
+      "x-ratelimit-remaining": true,
+      "x-ratelimit-reset": true,
+      "retry-after": true,
+    },
+  });
+
   app.get(
     "/health",
     {
@@ -534,6 +548,9 @@ export function buildRegistryApp(
   app.get<{ Querystring: { code: string; state: string } }>(
     "/auth/discord/callback",
     {
+      config: {
+        rateLimit: { max: 20, timeWindow: "1 minute" },
+      },
       schema: {
         querystring: discordCallbackQuerySchema,
       },
@@ -570,6 +587,9 @@ export function buildRegistryApp(
   app.get<{ Querystring: { code: string; provider_subject: string; provider_username?: string } }>(
     "/auth/dev/complete",
     {
+      config: {
+        rateLimit: { max: 20, timeWindow: "1 minute" },
+      },
       schema: {
         querystring: devOAuthCompletionQuerySchema,
       },
@@ -601,6 +621,9 @@ export function buildRegistryApp(
   app.post<{ Body: CreateChallengeInput }>(
     "/v1/minecraft/auth-challenges",
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: "1 minute" },
+      },
       schema: {
         body: createChallengeBodySchema,
         response: {
@@ -626,6 +649,9 @@ export function buildRegistryApp(
   app.post<{ Body: { username: string; server_id?: string } }>(
     "/v1/console/auth-challenges",
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: "1 minute" },
+      },
       schema: {
         body: createConsoleAuthChallengeBodySchema,
         response: {
@@ -685,6 +711,9 @@ export function buildRegistryApp(
   }>(
     "/v1/minecraft/auth-challenges/:challenge_id/oauth-completions",
     {
+      config: {
+        rateLimit: { max: 20, timeWindow: "1 minute" },
+      },
       schema: {
         params: Type.Object({
           challenge_id: Type.String(),
@@ -713,6 +742,9 @@ export function buildRegistryApp(
   app.post<{ Body: SessionVerificationInput }>(
     "/v1/minecraft/sessions/verify",
     {
+      config: {
+        rateLimit: { max: 200, timeWindow: "1 minute" },
+      },
       schema: {
         body: sessionVerificationBodySchema,
         response: {
@@ -739,6 +771,22 @@ export function buildRegistryApp(
   app.get<{ Headers: { authorization?: string } }>(
     "/v1/console/me",
     {
+      config: {
+        rateLimit: {
+          max: 60,
+          timeWindow: "1 minute",
+          keyGenerator: (request) => {
+            const auth = request.headers.authorization;
+            if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+              const token = auth.slice("Bearer ".length).trim();
+              if (token.length > 0) {
+                return createHash("sha256").update(token).digest("hex");
+              }
+            }
+            return request.ip;
+          },
+        },
+      },
       schema: {
         headers: Type.Object({
           authorization: Type.Optional(Type.String()),
@@ -769,6 +817,22 @@ export function buildRegistryApp(
   }>(
     "/v1/console/sessions/:session_id/revoke",
     {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: "1 minute",
+          keyGenerator: (request) => {
+            const auth = request.headers.authorization;
+            if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+              const token = auth.slice("Bearer ".length).trim();
+              if (token.length > 0) {
+                return createHash("sha256").update(token).digest("hex");
+              }
+            }
+            return request.ip;
+          },
+        },
+      },
       schema: {
         params: Type.Object({
           session_id: Type.String(),

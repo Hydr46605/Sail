@@ -49,6 +49,7 @@ export interface SailRegistryConfig {
   premiumNameNegativeCacheSeconds: number;
   devOAuthEnabled: boolean;
   discordOAuth: DiscordOAuthConfig;
+  githubOAuth: GitHubOAuthConfig;
   defaultServer: DefaultServerConfig;
 }
 
@@ -63,6 +64,16 @@ export interface DefaultServerConfig {
 }
 
 export interface DiscordOAuthConfig {
+  enabled: boolean;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  authorizeUrl: string;
+  tokenUrl: string;
+  userUrl: string;
+}
+
+export interface GitHubOAuthConfig {
   enabled: boolean;
   clientId: string;
   clientSecret: string;
@@ -327,6 +338,7 @@ export function loadRegistryConfig(env: Env = process.env): SailRegistryConfig {
   const apiUrl = readString(env, "SAIL_REGISTRY_API_URL", `http://${host}:${port}`);
   const consoleUrl = readOptionalHttpUrl(env, "SAIL_CONSOLE_URL");
   const discordOAuth = readDiscordOAuthConfig(env, apiUrl);
+  const githubOAuth = readGitHubOAuthConfig(env, apiUrl);
   const stateBackend = readRegistryStateBackend(env);
   const trustStatus = readTrustStatus(env);
   const signingKey = readSigningKeyConfig(env, { stateBackend, trustStatus });
@@ -362,6 +374,7 @@ export function loadRegistryConfig(env: Env = process.env): SailRegistryConfig {
     premiumNameNegativeCacheSeconds: readNonNegativeInteger(env, "SAIL_PREMIUM_NAME_NEGATIVE_CACHE_SECONDS", 60),
     devOAuthEnabled: readBoolean(env, "SAIL_OAUTH_DEV_ENABLED", false),
     discordOAuth,
+    githubOAuth,
     defaultServer: readDefaultServerConfig(env),
   };
 }
@@ -382,5 +395,24 @@ function readDiscordOAuthConfig(env: Env, apiUrl: string): DiscordOAuthConfig {
     authorizeUrl: readString(env, "SAIL_OAUTH_DISCORD_AUTHORIZE_URL", "https://discord.com/oauth2/authorize"),
     tokenUrl: readString(env, "SAIL_OAUTH_DISCORD_TOKEN_URL", "https://discord.com/api/oauth2/token"),
     userUrl: readString(env, "SAIL_OAUTH_DISCORD_USER_URL", "https://discord.com/api/users/@me"),
+  };
+}
+
+function readGitHubOAuthConfig(env: Env, apiUrl: string): GitHubOAuthConfig {
+  const enabled = readBoolean(env, "SAIL_OAUTH_GITHUB_ENABLED", false);
+  const clientId = readOptionalString(env, "SAIL_OAUTH_GITHUB_CLIENT_ID") ?? "";
+  const clientSecret = readOptionalString(env, "SAIL_OAUTH_GITHUB_CLIENT_SECRET") ?? "";
+  if (enabled && (!clientId || !clientSecret)) {
+    throw new Error("GitHub OAuth requires SAIL_OAUTH_GITHUB_CLIENT_ID and SAIL_OAUTH_GITHUB_CLIENT_SECRET");
+  }
+
+  return {
+    enabled,
+    clientId,
+    clientSecret,
+    redirectUri: readString(env, "SAIL_OAUTH_GITHUB_REDIRECT_URI", `${apiUrl}/auth/github/callback`),
+    authorizeUrl: readString(env, "SAIL_OAUTH_GITHUB_AUTHORIZE_URL", "https://github.com/login/oauth/authorize"),
+    tokenUrl: readString(env, "SAIL_OAUTH_GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token"),
+    userUrl: readString(env, "SAIL_OAUTH_GITHUB_USER_URL", "https://api.github.com/user"),
   };
 }

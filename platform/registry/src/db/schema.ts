@@ -49,6 +49,8 @@ export interface ServersTable {
   status: DefaultedColumn<"active" | "disabled" | "suspended">;
   public_listing: DefaultedColumn<boolean>;
   last_successful_verification_at: NullableTimestampColumn;
+  api_key_jwk_id: NullableTextColumn;
+  api_key_issued_at: NullableTimestampColumn;
   created_at: GeneratedTimestampColumn;
   updated_at: GeneratedTimestampColumn;
 }
@@ -177,6 +179,17 @@ export interface AuditEventsTable {
   created_at: GeneratedTimestampColumn;
 }
 
+export interface ServerApiKeyClaimsTable {
+  id: string;
+  server_id: string;
+  account_id: string;
+  claim_code_hash: string;
+  api_key_jwt: string;
+  expires_at: TimestampColumn;
+  used_at: NullableTimestampColumn;
+  created_at: GeneratedTimestampColumn;
+}
+
 export interface RegistryDatabaseSchema {
   registries: RegistriesTable;
   servers: ServersTable;
@@ -189,6 +202,7 @@ export interface RegistryDatabaseSchema {
   registry_signing_keys: RegistrySigningKeysTable;
   trusted_issuers: TrustedIssuersTable;
   audit_events: AuditEventsTable;
+  server_api_key_claims: ServerApiKeyClaimsTable;
 }
 
 export type RegistryDatabase = Kysely<RegistryDatabaseSchema>;

@@ -5,6 +5,7 @@ import type {
   ServerSessionReusePolicy,
 } from "../config.js";
 import type { PremiumNameLookup } from "../premium-names.js";
+import type { RegistryDatabase } from "../db/schema.js";
 
 export type ChallengeMode = "kick" | "limbo" | "hybrid";
 export type ChallengeStatus = "pending" | "completed" | "expired" | "revoked" | "denied";
@@ -199,4 +200,6 @@ export interface ChallengeService {
   revokeConsoleSession(sessionToken: string, sessionId: string): Promise<SessionRevocationResponse>;
   verifySession(input: SessionVerificationInput): Promise<SessionVerificationResponse>;
   revokeSession(sessionId: string): SessionRevocationResponse | Promise<SessionRevocationResponse>;
+  getSessionByToken(token: string): Promise<{ account_id: string | null; session_id: string } | null>;
+  getDatabase(): RegistryDatabase | null;
 }

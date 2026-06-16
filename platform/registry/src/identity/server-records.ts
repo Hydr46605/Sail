@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { sql, type Selectable } from "kysely";
 import type { SailRegistryConfig } from "../config.js";
 import type { RegistryDatabase, ServersTable } from "../db/schema.js";
+import { generateApiKeyJwt } from "./api-keys.js";
+import { createApiKeyClaim } from "./api-key-claims.js";
 
 export type ServerRecordRow = Selectable<ServersTable>;
 
@@ -81,4 +83,80 @@ export function serializeServerRecord(row: ServerRecordRow): SerializedServerRec
     status: row.status,
     public_listing: row.public_listing,
   };
+}
+
+export interface RegisterServerResult {
+  server: ServerRecordRow;
+  apiKey: string;
+  claimCode: string;
+}
+
+export async function registerServer(
+  db: RegistryDatabase,
+  config: Pick<SailRegistryConfig, "registryId" | "privateKey" | "signingKeyFingerprint">,
+  ownerAccountId: string,
+  serverId: string,
+  displayName: string,
+): Promise<RegisterServerResult> {
+  const existing = await db
+    .selectFrom("servers")
+    .select("server_id")
+    .where("owner_account_id", "=", ownerAccountId)
+    .executeTakeFirst();
+  if (existing) {
+    throw new Error("Account already owns a server");
+  }
+
+  const conflict = await db
+    .selectFrom("servers")
+    .select("server_id")
+    .where("registry_id", "=", config.registryId)
+    .where("server_id", "=", serverId)
+    .executeTakeFirst();
+  if (conflict) {
+    throw new Error("Server ID already taken");
+  }
+
+  const server = await db
+    .insertInto("servers")
+    .values({
+      id: randomUUID(),
+      registry_id: config.registryId,
+      server_id: serverId,
+      display_name: displayName,
+      owner_account_id: ownerAccountId,
+      registry_mode: "self_hosted",
+      allowed_claim_types: ["LOCAL_SOFT"],
+      session_reuse_policy: "off",
+      privacy_mode: "minimal",
+      status: "active",
+      public_listing: false,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  const { apiKey, apiKeyJwkId, issuedAt } = await generateApiKeyJwt(config, serverId, ownerAccountId);
+
+  await db
+    .updateTable("servers")
+    .set({ api_key_jwk_id: apiKeyJwkId, api_key_issued_at: issuedAt, updated_at: sql`now()` })
+    .where("id", "=", server.id)
+    .execute();
+
+  const { claimCode } = await createApiKeyClaim(db, serverId, ownerAccountId, apiKey);
+
+  return { server, apiKey, claimCode };
+}
+
+export async function getServerByOwner(
+  db: RegistryDatabase,
+  registryId: string,
+  accountId: string,
+): Promise<ServerRecordRow | undefined> {
+  return await db
+    .selectFrom("servers")
+    .selectAll()
+    .where("registry_id", "=", registryId)
+    .where("owner_account_id", "=", accountId)
+    .executeTakeFirst();
 }

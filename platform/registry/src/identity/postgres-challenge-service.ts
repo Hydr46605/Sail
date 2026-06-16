@@ -901,6 +901,30 @@ export class PostgresChallengeService implements ChallengeService {
       details,
     );
   }
+
+  async getSessionByToken(token: string): Promise<{ account_id: string | null; session_id: string } | null> {
+    try {
+      const payload = await this.signer.verifySessionToken(token);
+      if (typeof payload.session_id !== "string" || typeof payload.account_id !== "string") {
+        return null;
+      }
+      const session = await this.db
+        .selectFrom("sessions")
+        .select(["session_token_hash", "account_id", "id as session_id", "status", "expires_at"])
+        .where("id", "=", payload.session_id)
+        .executeTakeFirst();
+      if (!session) return null;
+      if (session.session_token_hash !== hashSecret(token)) return null;
+      if (session.status === "revoked" || session.expires_at.getTime() <= Date.now()) return null;
+      return { account_id: session.account_id, session_id: session.session_id };
+    } catch {
+      return null;
+    }
+  }
+
+  getDatabase(): RegistryDatabase {
+    return this.db;
+  }
 }
 
 async function upsertOAuthAccount(

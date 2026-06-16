@@ -3,6 +3,7 @@ import type { JWTPayload } from "jose";
 import { JWTExpired } from "jose/errors";
 import type { SailRegistryConfig } from "./config.js";
 import type { SailJwk } from "./config.js";
+import type { RegistryDatabase } from "./db/schema.js";
 import { createPremiumNameLookup, type PremiumNameLookup } from "./premium-names.js";
 import {
   type ChallengeCreatedResponse,
@@ -478,6 +479,29 @@ export class InMemoryChallengeService implements ChallengeService {
       "This name belongs to a Minecraft Java account. Join with the official account.",
       details,
     );
+  }
+
+  async getSessionByToken(token: string): Promise<{ account_id: string | null; session_id: string } | null> {
+    try {
+      const payload = await this.signer.verifySessionToken(token);
+      if (typeof payload.session_id !== "string" || typeof payload.account_id !== "string") {
+        return null;
+      }
+      const session = this.sessions.get(payload.session_id);
+      if (!session || session.tokenHash !== hashSecret(token)) {
+        return null;
+      }
+      if (session.status === "revoked" || session.expiresAt.getTime() <= Date.now()) {
+        return null;
+      }
+      return { account_id: payload.account_id, session_id: payload.session_id };
+    } catch {
+      return null;
+    }
+  }
+
+  getDatabase(): RegistryDatabase | null {
+    return null;
   }
 }
 

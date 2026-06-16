@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import rateLimit from "@fastify/rate-limit";
-import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyServerOptions, type FastifyRequest } from "fastify";
 import { Type } from "@sinclair/typebox";
 import { InMemoryChallengeService } from "./challenges.js";
 import {
@@ -17,6 +17,8 @@ import type { SailRegistryConfig } from "./config.js";
 import type { DiscordOAuthConfig, GitHubOAuthConfig, GoogleOAuthConfig } from "./config.js";
 import { createSailError } from "./identity/challenge-utils.js";
 import { loadRegistryConfig } from "./config.js";
+import { registerServer } from "./identity/server-records.js";
+import { consumeApiKeyClaim } from "./identity/api-key-claims.js";
 
 const protocolVersion = "sail-protocol-v1";
 
@@ -175,6 +177,41 @@ const errorResponseSchema = Type.Object(
       },
       { additionalProperties: false },
     ),
+  },
+  { additionalProperties: false },
+);
+
+const registerServerBodySchema = Type.Object(
+  {
+    server_id: Type.String({ minLength: 3, maxLength: 64, pattern: "^[a-z0-9][a-z0-9][a-z0-9_-]*[a-z0-9]$" }),
+    display_name: Type.String({ minLength: 1, maxLength: 128 }),
+  },
+  { additionalProperties: false },
+);
+
+const registerServerResponseSchema = Type.Object(
+  {
+    protocol_version: Type.Literal(protocolVersion),
+    server_id: Type.String(),
+    display_name: Type.String(),
+    api_key: Type.String(),
+    claim_code: Type.String(),
+  },
+  { additionalProperties: false },
+);
+
+const claimServerBodySchema = Type.Object(
+  {
+    claim_code: Type.String({ minLength: 32, maxLength: 32 }),
+  },
+  { additionalProperties: false },
+);
+
+const claimServerResponseSchema = Type.Object(
+  {
+    protocol_version: Type.Literal(protocolVersion),
+    api_key: Type.String(),
+    server_id: Type.String(),
   },
   { additionalProperties: false },
 );
@@ -1041,6 +1078,98 @@ export function buildRegistryApp(
         }
         throw error;
       }
+    },
+  );
+
+  app.post<{ Body: { server_id: string; display_name: string }; Headers: { authorization?: string } }>(
+    "/v1/servers",
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: "1 minute" },
+      },
+      schema: {
+        body: registerServerBodySchema,
+        headers: Type.Object({ authorization: Type.Optional(Type.String()) }),
+        response: {
+          201: registerServerResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionToken = request.headers.authorization?.startsWith("Bearer ")
+        ? request.headers.authorization.slice("Bearer ".length).trim()
+        : undefined;
+      if (!sessionToken) {
+        return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+      }
+
+      try {
+        const session = await challenges.getSessionByToken(sessionToken);
+        if (!session || session.account_id === null) {
+          return reply.code(401).send(createSailError("invalid_token", 401, true, "Invalid or expired session"));
+        }
+
+        const db = challenges.getDatabase();
+        if (!db) {
+          return reply.code(503).send(createSailError("unavailable", 503, true, "Server registration requires PostgreSQL backend"));
+        }
+
+        const result = await registerServer(
+          db,
+          { registryId: config.registryId, privateKey: config.privateKey, signingKeyFingerprint: config.signingKeyFingerprint },
+          session.account_id,
+          request.body.server_id,
+          request.body.display_name
+        );
+        return reply.code(201).send({
+          protocol_version: protocolVersion,
+          server_id: result.server.server_id,
+          display_name: result.server.display_name,
+          api_key: result.apiKey,
+          claim_code: result.claimCode,
+        });
+      } catch (error) {
+        if (error instanceof Error && (error.message.includes("already") || error.message.includes("taken"))) {
+          return reply.code(409).send(createSailError("conflict", 409, false, error.message));
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post<{ Body: { claim_code: string } }>(
+    "/v1/servers/claim",
+    {
+      config: {
+        rateLimit: { max: 10, timeWindow: "1 minute" },
+      },
+      schema: {
+        body: claimServerBodySchema,
+        response: {
+          200: claimServerResponseSchema,
+          400: errorResponseSchema,
+          404: errorResponseSchema,
+          410: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const db = challenges.getDatabase();
+      if (!db) {
+        return reply.code(503).send(createSailError("unavailable", 503, true, "Claim code requires PostgreSQL backend"));
+      }
+      const consumed = await consumeApiKeyClaim(db, request.body.claim_code);
+      if (!consumed) {
+        return reply.code(404).send(createSailError("invalid_claim_code", 404, false, "Invalid or expired claim code"));
+      }
+      return reply.send({
+        protocol_version: protocolVersion,
+        api_key: consumed.apiKeyJwt,
+        server_id: consumed.serverId,
+      });
     },
   );
 

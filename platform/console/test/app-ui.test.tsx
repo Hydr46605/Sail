@@ -58,12 +58,19 @@ describe("Sail Console user flow UI", () => {
     vi.unstubAllGlobals();
   });
 
-  test("shows the operational console entry before developer tools", async () => {
-    renderConsole();
-
+  async function startGetStarted() {
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Get Started" })).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Get Started" }));
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Sail Console" })).toBeTruthy();
     });
+  }
+
+  test("shows the operational console entry before developer tools", async () => {
+    renderConsole();
+    await startGetStarted();
     expect(screen.getByText("Connect to the configured registry and create a local name authentication challenge."))
       .toBeTruthy();
     expect(screen.getByText("Enter a Minecraft name")).toBeTruthy();
@@ -77,10 +84,7 @@ describe("Sail Console user flow UI", () => {
 
   test("hides developer tools when the console registry is locked", async () => {
     renderConsole({ registryLocked: true });
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sail Console" })).toBeTruthy();
-    });
+    await startGetStarted();
     expect(screen.queryByText("Developer tools")).toBeNull();
     expect(screen.queryByLabelText("Registry URL")).toBeNull();
     expect(screen.queryByRole("button", { name: "Import session" })).toBeNull();
@@ -103,6 +107,7 @@ describe("Sail Console user flow UI", () => {
     vi.stubGlobal("fetch", fetchImpl);
 
     renderConsole();
+    await startGetStarted();
 
     fireEvent.change(screen.getByLabelText("Minecraft name"), {
       target: { value: "SailAlt03" },

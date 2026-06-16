@@ -118,6 +118,11 @@ export function ConsoleHomeRoute() {
           registryLocked={runtimeConfig.registryLocked}
           authChallenge={authChallengeMutation.data}
           authChallengeError={authChallengeMutation.error}
+          githubAuthUrl={
+            authChallengeMutation.data
+              ? `${effectiveRegistryUrl}/auth/github/login?code=${encodeURIComponent(authChallengeMutation.data.code)}`
+              : undefined
+          }
           isStartingAuth={authChallengeMutation.isPending}
           onRegistryUrlChange={updateRegistryUrl}
           onStartAuth={(username) => authChallengeMutation.mutate(username)}

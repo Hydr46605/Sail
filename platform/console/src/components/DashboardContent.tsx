@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Activity, KeyRound, Link2, Server } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
 import type { ConsoleProfileResponse } from "../types.js";
 import { countActiveSessions, formatProviderLabel, getOperatorSummary } from "../utils/helpers.js";
 import { Metric } from "./Metric.js";
+import { ServerApiKeyDeliveryModal } from "./ServerApiKeyDeliveryModal.js";
 import { ServerCard } from "./ServerCard.js";
+import { ServerRegistrationForm } from "./ServerRegistrationForm.js";
 import { SessionRow } from "./SessionRow.js";
 import { StatusPill } from "./StatusPill.js";
+import { useServerRegistration } from "../hooks/useServerRegistration.js";
 
 export function DashboardContent(props: {
   auth: StoredConsoleAuth;
@@ -15,6 +19,9 @@ export function DashboardContent(props: {
   onRevoke: (sessionId: string) => void;
 }) {
   const operatorSummary = getOperatorSummary(props.profile);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const { register, isLoading, error, result } = useServerRegistration();
 
   return (
     <>
@@ -161,7 +168,17 @@ export function DashboardContent(props: {
             <span className="section-kicker">Servers</span>
             <h2 id="servers-heading">Trusted registry servers</h2>
           </div>
-          <Server aria-hidden="true" size={20} />
+          <div className="section-heading-actions">
+            {props.profile.trusted_servers.length === 0 && !showRegistrationForm && (
+              <button
+                className="primary-button"
+                onClick={() => setShowRegistrationForm(true)}
+              >
+                Register Server
+              </button>
+            )}
+            <Server aria-hidden="true" size={20} />
+          </div>
         </div>
         <div className="server-list">
           {props.profile.trusted_servers.length > 0 ? (
@@ -172,6 +189,28 @@ export function DashboardContent(props: {
             <span className="empty-state">No trusted servers</span>
           )}
         </div>
+        {showRegistrationForm && (
+          <ServerRegistrationForm
+            onSubmit={async (input) => {
+              await register(input);
+              setShowRegistrationForm(false);
+              setShowDeliveryModal(true);
+            }}
+            isLoading={isLoading}
+            {...(error ? { error } : {})}
+          />
+        )}
+        {result && (
+          <ServerApiKeyDeliveryModal
+            isOpen={showDeliveryModal}
+            onClose={() => {
+              setShowDeliveryModal(false);
+            }}
+            serverId={result.server_id}
+            apiKey={result.api_key}
+            claimCode={result.claim_code}
+          />
+        )}
       </section>
     </>
   );

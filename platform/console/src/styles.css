@@ -317,6 +317,12 @@ h2 {
   gap: 16px;
 }
 
+.section-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .section-kicker {
   display: block;
   margin-bottom: 4px;

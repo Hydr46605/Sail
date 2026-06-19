@@ -152,6 +152,53 @@ describe("Sail Console user flow UI", () => {
     expect(screen.getByText("No gateway sessions yet")).toBeTruthy();
   });
 
+  test("shows Register Server button when user has no servers", () => {
+    const profile: ConsoleProfileResponse = {
+      protocol_version: "sail-protocol-v1",
+      account: { account_id: "acct_123", display_name: "Test", status: "active", risk_level: "low", linked_providers: [] },
+      names: [],
+      sessions: [],
+      trusted_servers: [],
+    };
+    window.sessionStorage.setItem("sail.console.auth.v1", JSON.stringify({ sessionToken: "test" }));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(profile)));
+
+    renderConsole();
+
+    return waitFor(() => {
+      expect(screen.getByRole("button", { name: /register server/i })).toBeDefined();
+    });
+  });
+
+  test("does not show Register Server button when user has a server", () => {
+    const profile: ConsoleProfileResponse = {
+      protocol_version: "sail-protocol-v1",
+      account: { account_id: "acct_123", display_name: "Test", status: "active", risk_level: "low", linked_providers: [] },
+      names: [],
+      sessions: [],
+      trusted_servers: [{
+        protocol_version: "sail-protocol-v1",
+        registry_id: "sail",
+        server_id: "my-server",
+        display_name: "My Server",
+        registry_mode: "self_hosted",
+        allowed_claim_types: ["SAIL_GLOBAL"],
+        session_reuse_policy: "off",
+        privacy_mode: "minimal",
+        status: "active",
+        public_listing: false,
+      }],
+    };
+    window.sessionStorage.setItem("sail.console.auth.v1", JSON.stringify({ sessionToken: "test" }));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(profile)));
+
+    renderConsole();
+
+    return waitFor(() => {
+      expect(screen.queryByRole("button", { name: /register server/i })).toBeNull();
+    });
+  });
+
   test("ServerCard renders server details", () => {
     const server = {
       protocol_version: "sail-protocol-v1" as const,

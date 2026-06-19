@@ -1,7 +1,10 @@
 import type {
+  ClaimCodeResponse,
   ConsoleAuthChallengeInput,
   ConsoleAuthChallengeResponse,
   ConsoleProfileResponse,
+  RegisterServerInput,
+  RegisterServerResponse,
   SailErrorResponse,
   SessionRevocationResponse,
 } from "./types.js";
@@ -23,6 +26,8 @@ export interface SailConsoleApiClient {
   createConsoleAuthChallenge(input: ConsoleAuthChallengeInput): Promise<ConsoleAuthChallengeResponse>;
   getConsoleProfile(sessionToken: string): Promise<ConsoleProfileResponse>;
   revokeConsoleSession(sessionToken: string, sessionId: string): Promise<SessionRevocationResponse>;
+  registerServer(sessionToken: string, input: RegisterServerInput): Promise<RegisterServerResponse>;
+  claimServerApiKey(claimCode: string): Promise<ClaimCodeResponse>;
 }
 
 export function createSailConsoleApiClient(options: {
@@ -51,6 +56,25 @@ export function createSailConsoleApiClient(options: {
       return requestJson(fetchImpl, `${baseUrl}/v1/console/sessions/${encodeURIComponent(sessionId)}/revoke`, {
         method: "POST",
         sessionToken: requireSessionToken(sessionToken),
+      });
+    },
+    async registerServer(sessionToken: string, input: RegisterServerInput): Promise<RegisterServerResponse> {
+      return requestJson(fetchImpl, `${baseUrl}/v1/servers`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        sessionToken: requireSessionToken(sessionToken),
+        body: JSON.stringify(input),
+      });
+    },
+    async claimServerApiKey(claimCode: string): Promise<ClaimCodeResponse> {
+      return requestJson(fetchImpl, `${baseUrl}/v1/servers/claim`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ claim_code: claimCode }),
       });
     },
   };

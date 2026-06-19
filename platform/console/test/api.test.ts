@@ -155,4 +155,96 @@ describe("Sail console API client", () => {
       message: "Sail Console API request failed with HTTP 500",
     } satisfies Partial<SailConsoleApiError>);
   });
+
+  test("registerServer sends correct request", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        protocol_version: "sail-protocol-v1",
+        server_id: "my-server",
+        display_name: "My Server",
+        api_key: "eyJhbGciOiJFUzI1NiJ9...",
+        claim_code: "a1b2c3d4e5f6g7h8",
+      }),
+    );
+    const client = createSailConsoleApiClient({ fetchImpl });
+
+    const result = await client.registerServer("test-token", {
+      server_id: "my-server",
+      display_name: "My Server",
+    });
+
+    expect(result.server_id).toBe("my-server");
+    expect(result.display_name).toBe("My Server");
+    expect(result.api_key).toBe("eyJhbGciOiJFUzI1NiJ9...");
+    expect(result.claim_code).toBe("a1b2c3d4e5f6g7h8");
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.stringContaining("/v1/servers"),
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-token",
+        }),
+      })
+    );
+  });
+
+  test("registerServer rejects blank session tokens", async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+    const client = createSailConsoleApiClient({ fetchImpl });
+
+    await expect(client.registerServer("  ", {
+      server_id: "my-server",
+      display_name: "My Server",
+    })).rejects.toMatchObject({
+      status: 401,
+      code: "missing_session_token",
+    } satisfies Partial<SailConsoleApiError>);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test("claimServerApiKey sends correct request", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        protocol_version: "sail-protocol-v1",
+        api_key: "eyJhbGciOiJFUzI1NiJ9...",
+        server_id: "my-server",
+      }),
+    );
+    const client = createSailConsoleApiClient({ fetchImpl });
+
+    const result = await client.claimServerApiKey("a1b2c3d4e5f6g7h8");
+
+    expect(result.api_key).toBe("eyJhbGciOiJFUzI1NiJ9...");
+    expect(result.server_id).toBe("my-server");
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.stringContaining("/v1/servers/claim"),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ claim_code: "a1b2c3d4e5f6g7h8" }),
+      })
+    );
+  });
+
+  test("claimServerApiKey throws Sail API errors", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        protocol_version: "sail-protocol-v1",
+        error: {
+          code: "invalid_claim_code",
+          message: "Invalid claim code",
+          audience: "developer",
+          http_status: 404,
+          retryable: false,
+          correlation_id: "corr_456",
+        },
+      }, { status: 404 }),
+    );
+    const client = createSailConsoleApiClient({ fetchImpl });
+
+    await expect(client.claimServerApiKey("invalid")).rejects.toMatchObject({
+      status: 404,
+      code: "invalid_claim_code",
+      message: "Invalid claim code",
+    } satisfies Partial<SailConsoleApiError>);
+  });
 });

@@ -89,3 +89,22 @@ export interface SessionRevocationResponse {
   status: "revoked";
   revoked_at: string;
 }
+
+export interface RegisterServerInput {
+  server_id: string;
+  display_name: string;
+}
+
+export interface RegisterServerResponse {
+  protocol_version: "sail-protocol-v1";
+  server_id: string;
+  display_name: string;
+  api_key: string;
+  claim_code: string;
+}
+
+export interface ClaimCodeResponse {
+  protocol_version: "sail-protocol-v1";
+  api_key: string;
+  server_id: string;
+}

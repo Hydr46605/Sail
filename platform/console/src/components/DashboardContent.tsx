@@ -3,6 +3,7 @@ import type { StoredConsoleAuth } from "../auth.js";
 import type { ConsoleProfileResponse } from "../types.js";
 import { countActiveSessions, formatProviderLabel, getOperatorSummary } from "../utils/helpers.js";
 import { Metric } from "./Metric.js";
+import { ServerCard } from "./ServerCard.js";
 import { SessionRow } from "./SessionRow.js";
 import { StatusPill } from "./StatusPill.js";
 
@@ -165,19 +166,7 @@ export function DashboardContent(props: {
         <div className="server-list">
           {props.profile.trusted_servers.length > 0 ? (
             props.profile.trusted_servers.map((server) => (
-              <article key={`${server.registry_id}:${server.server_id}`} className="server-card">
-                <div>
-                  <strong>{server.display_name}</strong>
-                  <code>{server.server_id}</code>
-                </div>
-                <div className="server-meta">
-                  <span>{server.registry_mode}</span>
-                  <span>{server.session_reuse_policy}</span>
-                  <span>{server.privacy_mode}</span>
-                  <span>{server.public_listing ? "public" : "private"}</span>
-                  <StatusPill status={server.status} />
-                </div>
-              </article>
+              <ServerCard key={`${server.registry_id}:${server.server_id}`} server={server} />
             ))
           ) : (
             <span className="empty-state">No trusted servers</span>

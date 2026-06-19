@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "../src/App.js";
+import { ServerCard } from "../src/components/ServerCard.js";
 import type { ConsoleProfileResponse } from "../src/types.js";
 
 function renderConsole(props?: { registryLocked?: boolean }) {
@@ -149,6 +150,25 @@ describe("Sail Console user flow UI", () => {
     expect(within(trustSummary).getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByText("0 active sessions")).toBeTruthy();
     expect(screen.getByText("No gateway sessions yet")).toBeTruthy();
+  });
+
+  test("ServerCard renders server details", () => {
+    const server = {
+      protocol_version: "sail-protocol-v1" as const,
+      registry_id: "sail",
+      server_id: "test-server",
+      display_name: "Test Server",
+      registry_mode: "self_hosted" as const,
+      allowed_claim_types: ["SAIL_GLOBAL" as const],
+      session_reuse_policy: "off" as const,
+      privacy_mode: "minimal" as const,
+      status: "active" as const,
+      public_listing: false,
+    };
+    render(<ServerCard server={server} />);
+    expect(screen.getByText("Test Server")).toBeTruthy();
+    expect(screen.getByText("test-server")).toBeTruthy();
+    expect(screen.getByText("active")).toBeTruthy();
   });
 
   test("renders operator coverage from sessions and trusted servers", async () => {

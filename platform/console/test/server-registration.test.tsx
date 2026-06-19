@@ -1,6 +1,11 @@
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { afterEach, describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
 import { ServerRegistrationForm } from "../src/components/ServerRegistrationForm.js";
+import { useServerRegistration } from "../src/hooks/useServerRegistration.js";
+import { RuntimeConfigContext } from "../src/contexts/RuntimeConfigContext.js";
 
 describe("ServerRegistrationForm", () => {
   afterEach(() => {
@@ -43,5 +48,24 @@ describe("ServerRegistrationForm", () => {
         display_name: "My Survival Server",
       });
     });
+  });
+});
+
+const createWrapper = () => {
+  const queryClient = new QueryClient();
+  return ({ children }: { children: React.ReactNode }) => (
+    <RuntimeConfigContext.Provider value={{ defaultRegistryUrl: "http://localhost:8787", registryLocked: false }}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </RuntimeConfigContext.Provider>
+  );
+};
+
+describe("useServerRegistration", () => {
+  it("returns register function and loading state", () => {
+    const { result } = renderHook(() => useServerRegistration(), {
+      wrapper: createWrapper(),
+    });
+    expect(typeof result.current.register).toBe("function");
+    expect(result.current.isLoading).toBe(false);
   });
 });

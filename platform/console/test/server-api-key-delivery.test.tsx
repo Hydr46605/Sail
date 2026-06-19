@@ -45,4 +45,22 @@ describe("ServerApiKeyDeliveryModal", () => {
       screen.getByText((content) => content.includes(defaultProps.apiKey)),
     ).toBeDefined();
   });
+
+  it("copies claim code command to clipboard", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<ServerApiKeyDeliveryModal {...defaultProps} />);
+    fireEvent.click(screen.getByRole("tab", { name: /claim code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy command/i }));
+    expect(writeText).toHaveBeenCalledWith(`/sail code ${defaultProps.claimCode}`);
+  });
+
+  it("copies direct setup command to clipboard", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<ServerApiKeyDeliveryModal {...defaultProps} />);
+    fireEvent.click(screen.getByRole("tab", { name: /direct setup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy command/i }));
+    expect(writeText).toHaveBeenCalledWith(`/sail setup ${defaultProps.apiKey}`);
+  });
 });

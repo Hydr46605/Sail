@@ -606,7 +606,7 @@ h2 {
   display: flex;
   gap: 4px;
   margin: 16px 0;
-  border-bottom: 1px solid var(--console-border);
+  border-bottom: 1px solid var(--console-line);
   padding-bottom: 8px;
 }
 
@@ -617,14 +617,14 @@ h2 {
   padding: 8px 12px;
   border: none;
   background: transparent;
-  color: var(--console-text-secondary);
+  color: var(--console-muted);
   cursor: pointer;
   border-radius: 6px;
   font-size: 13px;
 }
 
 .delivery-tab:hover {
-  background: var(--console-surface);
+  background: var(--console-panel-soft);
 }
 
 .delivery-tab.active {
@@ -643,7 +643,7 @@ h2 {
 }
 
 .delivery-method code {
-  background: var(--console-surface);
+  background: var(--console-panel-soft);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
@@ -651,8 +651,8 @@ h2 {
 }
 
 .code-block {
-  background: var(--console-surface);
-  border: 1px solid var(--console-border);
+  background: var(--console-panel-soft);
+  border: 1px solid var(--console-line);
   border-radius: 8px;
   padding: 12px 16px;
   margin: 12px 0;
@@ -674,7 +674,7 @@ h2 {
 
 .field-hint {
   font-size: 12px;
-  color: var(--console-text-secondary);
+  color: var(--console-muted);
   margin: 8px 0;
 }
 

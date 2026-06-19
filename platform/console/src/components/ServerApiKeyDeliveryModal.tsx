@@ -33,9 +33,12 @@ export function ServerApiKeyDeliveryModal({
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
         <Dialog.Content className="dialog-content delivery-modal">
-          <Dialog.Title className="dialog-title">
+          <Dialog.Title>
             API Key Delivery — {serverId}
           </Dialog.Title>
+          <Dialog.Description className="sr-only">
+            Deliver API key for server {serverId} using one of three methods.
+          </Dialog.Description>
 
           <div className="delivery-tabs" role="tablist">
             <button
@@ -115,7 +118,7 @@ export function ServerApiKeyDeliveryModal({
           </div>
 
           <Dialog.Close asChild>
-            <button className="icon-button dialog-close" aria-label="Close">
+            <button className="icon-button" aria-label="Close">
               <X size={16} />
             </button>
           </Dialog.Close>

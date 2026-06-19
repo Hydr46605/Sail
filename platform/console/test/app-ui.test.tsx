@@ -166,9 +166,9 @@ describe("Sail Console user flow UI", () => {
       public_listing: false,
     };
     render(<ServerCard server={server} />);
-    expect(screen.getByText("Test Server")).toBeTruthy();
-    expect(screen.getByText("test-server")).toBeTruthy();
-    expect(screen.getByText("active")).toBeTruthy();
+    expect(screen.getByText("Test Server")).toBeDefined();
+    expect(screen.getByText(/Server ID: test-server/)).toBeDefined();
+    expect(screen.getByText(/active/)).toBeDefined();
   });
 
   test("renders operator coverage from sessions and trusted servers", async () => {

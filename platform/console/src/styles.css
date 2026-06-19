@@ -598,6 +598,86 @@ h2 {
   box-shadow: 0 24px 70px rgba(22, 29, 35, 0.28);
 }
 
+.delivery-modal {
+  max-width: 480px;
+}
+
+.delivery-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0;
+  border-bottom: 1px solid var(--console-border);
+  padding-bottom: 8px;
+}
+
+.delivery-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--console-text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.delivery-tab:hover {
+  background: var(--console-surface);
+}
+
+.delivery-tab.active {
+  background: var(--console-teal);
+  color: white;
+}
+
+.delivery-content {
+  padding: 16px 0;
+}
+
+.delivery-method p {
+  margin: 0 0 12px;
+  color: var(--console-text);
+  font-size: 14px;
+}
+
+.delivery-method code {
+  background: var(--console-surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.code-block {
+  background: var(--console-surface);
+  border: 1px solid var(--console-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.code-block code {
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.code-block.claim-code {
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--console-text-secondary);
+  margin: 8px 0;
+}
+
 .dialog-heading {
   display: flex;
   align-items: center;

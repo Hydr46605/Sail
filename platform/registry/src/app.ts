@@ -1083,7 +1083,7 @@ export function buildRegistryApp(
           ? request.headers.authorization.slice("Bearer ".length).trim()
           : undefined;
         if (!token) {
-          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token").body);
         }
         return await challenges.deregisterServer(token, request.params.server_id);
       } catch (error) {
@@ -1131,7 +1131,7 @@ export function buildRegistryApp(
           ? request.headers.authorization.slice("Bearer ".length).trim()
           : undefined;
         if (!token) {
-          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token").body);
         }
         const limit = typeof request.query.limit === "number" ? request.query.limit : 50;
         return await challenges.getAuditEvents(token, limit);
@@ -1180,7 +1180,7 @@ export function buildRegistryApp(
           ? request.headers.authorization.slice("Bearer ".length).trim()
           : undefined;
         if (!token) {
-          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token").body);
         }
         return await challenges.getSigningKeys(token);
       } catch (error) {
@@ -1220,7 +1220,7 @@ export function buildRegistryApp(
           ? request.headers.authorization.slice("Bearer ".length).trim()
           : undefined;
         if (!token) {
-          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token").body);
         }
         return await challenges.revokeSigningKey(token, request.params.kid);
       } catch (error) {
@@ -1414,18 +1414,18 @@ export function buildRegistryApp(
         ? request.headers.authorization.slice("Bearer ".length).trim()
         : undefined;
       if (!sessionToken) {
-        return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+        return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token").body);
       }
 
       try {
         const session = await challenges.getSessionByToken(sessionToken);
         if (!session || session.account_id === null) {
-          return reply.code(401).send(createSailError("invalid_token", 401, true, "Invalid or expired session"));
+          return reply.code(401).send(createSailError("invalid_token", 401, true, "Invalid or expired session").body);
         }
 
         const db = challenges.getDatabase();
         if (!db) {
-          return reply.code(503).send(createSailError("unavailable", 503, true, "Server registration requires PostgreSQL backend"));
+          return reply.code(503).send(createSailError("unavailable", 503, true, "Server registration requires PostgreSQL backend").body);
         }
 
         const result = await registerServer(
@@ -1444,7 +1444,7 @@ export function buildRegistryApp(
         });
       } catch (error) {
         if (error instanceof Error && (error.message.includes("already") || error.message.includes("taken"))) {
-          return reply.code(409).send(createSailError("conflict", 409, false, error.message));
+          return reply.code(409).send(createSailError("conflict", 409, false, error.message).body);
         }
         throw error;
       }
@@ -1470,11 +1470,11 @@ export function buildRegistryApp(
     async (request, reply) => {
       const db = challenges.getDatabase();
       if (!db) {
-        return reply.code(503).send(createSailError("unavailable", 503, true, "Claim code requires PostgreSQL backend"));
+        return reply.code(503).send(createSailError("unavailable", 503, true, "Claim code requires PostgreSQL backend").body);
       }
       const consumed = await consumeApiKeyClaim(db, request.body.claim_code);
       if (!consumed) {
-        return reply.code(404).send(createSailError("invalid_claim_code", 404, false, "Invalid or expired claim code"));
+        return reply.code(404).send(createSailError("invalid_claim_code", 404, false, "Invalid or expired claim code").body);
       }
       return reply.send({
         protocol_version: protocolVersion,

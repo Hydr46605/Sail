@@ -21,6 +21,7 @@ export function ConsoleHomeRoute() {
   const [auth, setAuth] = useState<StoredConsoleAuth | undefined>(readStoredAuth);
   const [started, setStarted] = useState(false);
   const [deregisterSuccessServerId, setDeregisterSuccessServerId] = useState<string | null>(null);
+  const [revokeSuccessSessionId, setRevokeSuccessSessionId] = useState<string | null>(null);
   const effectiveRegistryUrl = runtimeConfig.registryLocked
     ? runtimeConfig.defaultRegistryUrl
     : registryUrl.trim() || runtimeConfig.defaultRegistryUrl;
@@ -54,6 +55,7 @@ export function ConsoleHomeRoute() {
         return;
       }
 
+      setRevokeSuccessSessionId(sessionId);
       await queryClient.invalidateQueries({
         queryKey: ["console-profile", effectiveRegistryUrl, auth?.sessionToken],
       });
@@ -129,6 +131,12 @@ export function ConsoleHomeRoute() {
     return () => clearTimeout(timer);
   }, [deregisterSuccessServerId]);
 
+  useEffect(() => {
+    if (!revokeSuccessSessionId) return;
+    const timer = setTimeout(() => setRevokeSuccessSessionId(null), 5000);
+    return () => clearTimeout(timer);
+  }, [revokeSuccessSessionId]);
+
   const logout = () => {
     clearSessionAuth();
   };
@@ -185,6 +193,7 @@ export function ConsoleHomeRoute() {
         isDeregistering={deregisterMutation.isPending}
         onDeregister={(serverId) => deregisterMutation.mutate(serverId)}
         deregisterSuccessServerId={deregisterSuccessServerId}
+        revokeSuccessSessionId={revokeSuccessSessionId}
       />
     </main>
   );

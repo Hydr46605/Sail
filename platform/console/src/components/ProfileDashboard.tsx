@@ -24,6 +24,7 @@ export function ProfileDashboard(props: {
   isDeregistering: boolean;
   onDeregister: (serverId: string) => void;
   deregisterSuccessServerId: string | null;
+  revokeSuccessSessionId: string | null;
 }) {
   const accountTitle = props.profile?.account.display_name ?? props.profile?.account.account_id ?? "Sail Console";
 
@@ -66,6 +67,12 @@ export function ProfileDashboard(props: {
         <div className="success-banner" role="status" aria-live="polite">
           <CheckCircle2 aria-hidden="true" size={18} />
           <span>Server <strong>{props.deregisterSuccessServerId}</strong> has been deregistered. Its API key has been revoked.</span>
+        </div>
+      ) : null}
+      {props.revokeSuccessSessionId ? (
+        <div className="success-banner" role="status" aria-live="polite">
+          <CheckCircle2 aria-hidden="true" size={18} />
+          <span>Session <code>{props.revokeSuccessSessionId}</code> has been revoked.</span>
         </div>
       ) : null}
 

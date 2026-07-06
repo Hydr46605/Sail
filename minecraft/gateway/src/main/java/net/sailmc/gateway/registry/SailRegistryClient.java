@@ -13,4 +13,8 @@ public interface SailRegistryClient {
     }
 
     RegistryHealthResponse getHealth() throws IOException, InterruptedException;
+
+    default void heartbeat(String serverId) throws IOException, InterruptedException {
+        // No-op by default. Gateways with an API key should override this.
+    }
 }

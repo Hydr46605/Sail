@@ -202,4 +202,5 @@ export interface ChallengeService {
   revokeSession(sessionId: string): SessionRevocationResponse | Promise<SessionRevocationResponse>;
   getSessionByToken(token: string): Promise<{ account_id: string | null; session_id: string } | null>;
   getDatabase(): RegistryDatabase | null;
+  recordHeartbeat(serverId: string): Promise<void> | void;
 }

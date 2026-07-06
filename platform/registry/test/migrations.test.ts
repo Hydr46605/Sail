@@ -13,6 +13,7 @@ describe("registry migrations", () => {
       "0005_signing_key_lifecycle.sql",
       "0006_server_api_keys.sql",
       "0007_server_api_key_claims.sql",
+      "0008_server_heartbeat.sql",
     ]);
     expect(migrations[0]?.checksum).toMatch(/^[a-f0-9]{64}$/u);
     expect(migrations[0]?.sql.trim().length).toBeGreaterThan(1000);
@@ -63,6 +64,7 @@ describe("registry migrations", () => {
       "0005_signing_key_lifecycle.sql",
       "0006_server_api_keys.sql",
       "0007_server_api_key_claims.sql",
+      "0008_server_heartbeat.sql",
     ]);
 
     const authChallengesMigration = migrations.find(

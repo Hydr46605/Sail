@@ -49,6 +49,7 @@ export interface ServersTable {
   status: DefaultedColumn<"active" | "disabled" | "suspended">;
   public_listing: DefaultedColumn<boolean>;
   last_successful_verification_at: NullableTimestampColumn;
+  last_heartbeat_at: NullableTimestampColumn;
   api_key_jwk_id: NullableTextColumn;
   api_key_issued_at: NullableTimestampColumn;
   created_at: GeneratedTimestampColumn;

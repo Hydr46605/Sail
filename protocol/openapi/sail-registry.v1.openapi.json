@@ -82,6 +82,237 @@
         }
       }
     },
+    "/v1/servers": {
+      "post": {
+        "tags": ["Servers"],
+        "operationId": "registerServer",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["server_id", "display_name"],
+                "properties": {
+                  "server_id": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 64,
+                    "pattern": "^[a-z0-9][a-z0-9][a-z0-9_-]*[a-z0-9]$"
+                  },
+                  "display_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Server registered. Returns API key and claim code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["protocol_version", "server_id", "display_name", "api_key", "claim_code"],
+                  "properties": {
+                    "protocol_version": {
+                      "const": "sail-protocol-v1"
+                    },
+                    "server_id": {
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": "string"
+                    },
+                    "api_key": {
+                      "type": "string"
+                    },
+                    "claim_code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session token is valid but the account does not have permission to register a server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Server ID is already taken or account already owns a server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/servers/claim": {
+      "post": {
+        "tags": ["Servers"],
+        "operationId": "claimServerApiKey",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["claim_code"],
+                "properties": {
+                  "claim_code": {
+                    "type": "string",
+                    "minLength": 32,
+                    "maxLength": 32
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claim code consumed. Returns API key JWT and server ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["protocol_version", "api_key", "server_id"],
+                  "properties": {
+                    "protocol_version": {
+                      "const": "sail-protocol-v1"
+                    },
+                    "api_key": {
+                      "type": "string"
+                    },
+                    "server_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Claim code is invalid or already consumed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/servers/heartbeat": {
+      "post": {
+        "tags": ["Servers"],
+        "operationId": "serverHeartbeat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["server_id"],
+                "properties": {
+                  "server_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 96
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Heartbeat recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["protocol_version", "server_id", "status", "last_heartbeat_at"],
+                  "properties": {
+                    "protocol_version": {
+                      "const": "sail-protocol-v1"
+                    },
+                    "server_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "ok"
+                    },
+                    "last_heartbeat_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing, invalid, or does not match the requested server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Server is not registered with this registry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/servers/{server_id}": {
       "get": {
         "tags": ["Servers"],

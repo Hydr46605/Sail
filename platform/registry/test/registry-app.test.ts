@@ -1351,6 +1351,240 @@ describe("Sail registry skeleton", () => {
     expect(second.name_claim_id).toBe(first.name_claim_id);
   });
 
+  test("POST /v1/servers/heartbeat without API key returns 403", async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/servers/heartbeat",
+      payload: {
+        server_id: "local-survival",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      protocol_version: "sail-protocol-v1",
+      error: {
+        code: "api_key_required",
+        http_status: 403,
+        retryable: true,
+      },
+    });
+  });
+
+  test("POST /v1/servers/heartbeat with invalid API key returns 403", async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/servers/heartbeat",
+      headers: {
+        authorization: "Bearer not-a-valid-jwt",
+      },
+      payload: {
+        server_id: "local-survival",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      protocol_version: "sail-protocol-v1",
+      error: {
+        code: "api_key_invalid",
+        http_status: 403,
+        retryable: true,
+      },
+    });
+  });
+
+  test("POST /v1/servers/heartbeat with valid API key succeeds", async () => {
+    const config = loadRegistryConfig({
+      SAIL_REGISTRY_API_URL: "http://127.0.0.1:8787",
+      SAIL_REGISTRY_AUTH_URL: "http://127.0.0.1:8787/auth/minecraft",
+      SAIL_REGISTRY_ID: "sail-local",
+      SAIL_REGISTRY_NAME: "Sail Local Registry",
+      SAIL_REGISTRY_PRIVACY_URL: "http://127.0.0.1:8787/privacy",
+      SAIL_REGISTRY_TERMS_URL: "http://127.0.0.1:8787/terms",
+    });
+    const service = new InMemoryChallengeService(config, { premiumNames: nonPremiumLookup() });
+    const app = buildRegistryApp(config, {}, { challengeService: service });
+    apps.push(app);
+
+    const { SignJWT, importJWK } = await import("jose");
+    const key = await importJWK(config.privateKey, "ES256");
+    const apiKeyToken = await new SignJWT({
+      scope: "api_key",
+      aud: "sail-gateway",
+      account_id: "acct_test",
+    })
+      .setProtectedHeader({ alg: "ES256", kid: config.privateKey.kid })
+      .setIssuer(config.registryId)
+      .setSubject("local-survival")
+      .setIssuedAt()
+      .setExpirationTime("90d")
+      .sign(key);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/servers/heartbeat",
+      headers: {
+        authorization: `Bearer ${apiKeyToken}`,
+      },
+      payload: {
+        server_id: "local-survival",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      protocol_version: "sail-protocol-v1",
+      server_id: "local-survival",
+      status: "ok",
+    });
+    expect(response.json().last_heartbeat_at).toBeDefined();
+  });
+
+  test("POST /v1/servers/heartbeat with mismatched server_id returns 403", async () => {
+    const config = loadRegistryConfig({
+      SAIL_REGISTRY_API_URL: "http://127.0.0.1:8787",
+      SAIL_REGISTRY_AUTH_URL: "http://127.0.0.1:8787/auth/minecraft",
+      SAIL_REGISTRY_ID: "sail-local",
+      SAIL_REGISTRY_NAME: "Sail Local Registry",
+      SAIL_REGISTRY_PRIVACY_URL: "http://127.0.0.1:8787/privacy",
+      SAIL_REGISTRY_TERMS_URL: "http://127.0.0.1:8787/terms",
+    });
+    const service = new InMemoryChallengeService(config, { premiumNames: nonPremiumLookup() });
+    const app = buildRegistryApp(config, {}, { challengeService: service });
+    apps.push(app);
+
+    const { SignJWT, importJWK } = await import("jose");
+    const key = await importJWK(config.privateKey, "ES256");
+    const apiKeyToken = await new SignJWT({
+      scope: "api_key",
+      aud: "sail-gateway",
+      account_id: "acct_test",
+    })
+      .setProtectedHeader({ alg: "ES256", kid: config.privateKey.kid })
+      .setIssuer(config.registryId)
+      .setSubject("local-survival")
+      .setIssuedAt()
+      .setExpirationTime("90d")
+      .sign(key);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/servers/heartbeat",
+      headers: {
+        authorization: `Bearer ${apiKeyToken}`,
+      },
+      payload: {
+        server_id: "different-server",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      protocol_version: "sail-protocol-v1",
+      error: {
+        code: "api_key_server_mismatch",
+        http_status: 403,
+        retryable: false,
+      },
+    });
+  });
+
+  test("POST /v1/minecraft/auth-challenges with valid API key proceeds", async () => {
+    const config = loadRegistryConfig({
+      SAIL_REGISTRY_API_URL: "http://127.0.0.1:8787",
+      SAIL_REGISTRY_AUTH_URL: "http://127.0.0.1:8787/auth/minecraft",
+      SAIL_REGISTRY_ID: "sail-local",
+      SAIL_REGISTRY_NAME: "Sail Local Registry",
+      SAIL_REGISTRY_PRIVACY_URL: "http://127.0.0.1:8787/privacy",
+      SAIL_REGISTRY_TERMS_URL: "http://127.0.0.1:8787/terms",
+    });
+    const service = new InMemoryChallengeService(config, { premiumNames: nonPremiumLookup() });
+    const app = buildRegistryApp(config, {}, { challengeService: service });
+    apps.push(app);
+
+    const { SignJWT, importJWK } = await import("jose");
+    const key = await importJWK(config.privateKey, "ES256");
+    const apiKeyToken = await new SignJWT({
+      scope: "api_key",
+      aud: "sail-gateway",
+      account_id: "acct_test",
+    })
+      .setProtectedHeader({ alg: "ES256", kid: config.privateKey.kid })
+      .setIssuer(config.registryId)
+      .setSubject("local-survival")
+      .setIssuedAt()
+      .setExpirationTime("90d")
+      .sign(key);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/minecraft/auth-challenges",
+      headers: {
+        authorization: `Bearer ${apiKeyToken}`,
+      },
+      payload: {
+        server_id: "local-survival",
+        username: "ApiUser",
+        connection_id: "velocity-api-key-test",
+        mode: "kick",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().requested_name).toBe("ApiUser");
+  });
+
+  test("POST /v1/minecraft/auth-challenges with invalid API key returns 403", async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/minecraft/auth-challenges",
+      headers: {
+        authorization: "Bearer invalid-api-key-jwt",
+      },
+      payload: {
+        server_id: "local-survival",
+        username: "Example",
+        connection_id: "velocity-connection-invalid-key",
+        mode: "kick",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      protocol_version: "sail-protocol-v1",
+      error: {
+        code: "api_key_invalid",
+        http_status: 403,
+        retryable: true,
+      },
+    });
+  });
+
+  test("POST /v1/minecraft/auth-challenges without API key still works", async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/minecraft/auth-challenges",
+      payload: {
+        server_id: "local-survival",
+        username: "NoKey",
+        connection_id: "velocity-no-key-test",
+        mode: "kick",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().requested_name).toBe("NoKey");
+  });
+
   test("rejects completing two local claims for the same name", async () => {
     const app = createTestApp();
 

@@ -917,7 +917,8 @@ class SailLoginDecisionServiceTest {
                                 "ES256",
                                 "P-256",
                                 "0WamuH-EnCrBXIQwPZo2ZKfwNV9OW9EDkzr4YzscxcY",
-                                "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo"))),
+                                "0wFxw0l_9Rziux_ZQboPeCkBi5oLibu_5GocXtVUURo")),
+                        ""),
                 defaults.server(),
                 defaults.loginFlow(),
                 defaults.backend());

@@ -19,6 +19,7 @@ import { createSailError } from "./identity/challenge-utils.js";
 import { loadRegistryConfig } from "./config.js";
 import { registerServer } from "./identity/server-records.js";
 import { consumeApiKeyClaim } from "./identity/api-key-claims.js";
+import { verifyApiKeyJwt } from "./identity/api-keys.js";
 
 const protocolVersion = "sail-protocol-v1";
 
@@ -212,6 +213,23 @@ const claimServerResponseSchema = Type.Object(
     protocol_version: Type.Literal(protocolVersion),
     api_key: Type.String(),
     server_id: Type.String(),
+  },
+  { additionalProperties: false },
+);
+
+const heartbeatBodySchema = Type.Object(
+  {
+    server_id: Type.String({ minLength: 1, maxLength: 96 }),
+  },
+  { additionalProperties: false },
+);
+
+const heartbeatResponseSchema = Type.Object(
+  {
+    protocol_version: Type.Literal(protocolVersion),
+    server_id: Type.String(),
+    status: Type.Literal("ok"),
+    last_heartbeat_at: Type.String({ format: "date-time" }),
   },
   { additionalProperties: false },
 );
@@ -839,7 +857,17 @@ export function buildRegistryApp(
     "/v1/minecraft/auth-challenges",
     {
       config: {
-        rateLimit: { max: 10, timeWindow: "1 minute" },
+        rateLimit: {
+          max: 10,
+          timeWindow: "1 minute",
+          keyGenerator: (request) => {
+            const token = extractOptionalBearerToken(request.headers.authorization);
+            if (token) {
+              return createHash("sha256").update(token).digest("hex");
+            }
+            return request.ip;
+          },
+        },
       },
       schema: {
         body: createChallengeBodySchema,
@@ -852,6 +880,7 @@ export function buildRegistryApp(
     },
     async (request, reply) => {
       try {
+        await validateServerApiKey(config, request.headers.authorization, request.body.server_id);
         const response = await challenges.createChallenge(request.body);
         return reply.code(201).send(response);
       } catch (error) {
@@ -975,7 +1004,43 @@ export function buildRegistryApp(
     },
     async (request, reply) => {
       try {
+        await validateServerApiKey(config, request.headers.authorization, request.body.server_id);
         return await challenges.verifySession(request.body);
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post<{ Body: { server_id: string }; Headers: { authorization?: string } }>(
+    "/v1/servers/heartbeat",
+    {
+      config: {
+        rateLimit: { max: 30, timeWindow: "1 minute" },
+      },
+      schema: {
+        body: heartbeatBodySchema,
+        headers: Type.Object({ authorization: Type.Optional(Type.String()) }),
+        response: {
+          200: heartbeatResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        await validateServerApiKey(config, request.headers.authorization, request.body.server_id, { required: true });
+        await challenges.recordHeartbeat(request.body.server_id);
+        return reply.send({
+          protocol_version: protocolVersion,
+          server_id: request.body.server_id,
+          status: "ok" as const,
+          last_heartbeat_at: new Date().toISOString(),
+        });
       } catch (error) {
         if (error instanceof SailChallengeError) {
           return reply.code(error.statusCode).send(error.body);
@@ -1487,4 +1552,38 @@ function extractBearerToken(authorization: string | undefined): string {
     throw createSailError("session_invalid", 401, true, "Your Sail session is invalid. Join again to authenticate.");
   }
   return token;
+}
+
+function extractOptionalBearerToken(authorization: string | undefined): string | undefined {
+  if (!authorization?.startsWith("Bearer ")) {
+    return undefined;
+  }
+  const token = authorization.slice("Bearer ".length).trim();
+  return token.length > 0 ? token : undefined;
+}
+
+async function validateServerApiKey(
+  config: SailRegistryConfig,
+  authorization: string | undefined,
+  serverId: string,
+  options?: { required?: boolean },
+): Promise<void> {
+  const token = extractOptionalBearerToken(authorization);
+  if (!token) {
+    if (options?.required) {
+      throw createSailError("api_key_required", 403, true, "A valid API key is required.");
+    }
+    return;
+  }
+
+  const payload = await verifyApiKeyJwt(config, token);
+  if (!payload) {
+    throw createSailError("api_key_invalid", 403, true, "The provided API key is invalid or expired.");
+  }
+  if (payload.sub !== serverId) {
+    throw createSailError("api_key_server_mismatch", 403, false, "The API key does not match the requested server.", {
+      expected_server_id: serverId,
+      api_key_server_id: payload.sub,
+    });
+  }
 }

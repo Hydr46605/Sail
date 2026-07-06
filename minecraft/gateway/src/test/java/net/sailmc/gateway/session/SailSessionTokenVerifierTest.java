@@ -230,7 +230,8 @@ class SailSessionTokenVerifierTest {
                         URI.create("http://127.0.0.1:8787"),
                         "my-network",
                         true,
-                        trustedKeys),
+                        trustedKeys,
+                        ""),
                 new SailGatewayConfig.Server(serverId, "Local Survival"),
                 defaults.loginFlow(),
                 defaults.backend());
@@ -244,7 +245,8 @@ class SailSessionTokenVerifierTest {
                         URI.create("http://127.0.0.1:8787"),
                         "my-network",
                         false,
-                        List.of()),
+                        List.of(),
+                        ""),
                 new SailGatewayConfig.Server(serverId, "Gateway Survival"),
                 defaults.loginFlow(),
                 defaults.backend());

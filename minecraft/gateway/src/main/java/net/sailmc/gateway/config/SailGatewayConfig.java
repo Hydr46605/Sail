@@ -57,7 +57,7 @@ public record SailGatewayConfig(
         Server server = defaultServer();
         return new SailGatewayConfig(
                 "local-dev",
-                new Registry("self-hosted", LOCAL_REGISTRY_API_URL, LOCAL_REGISTRY_ID, false, List.of()),
+                new Registry("self-hosted", LOCAL_REGISTRY_API_URL, LOCAL_REGISTRY_ID, false, List.of(), ""),
                 server,
                 new LoginFlow(
                         UnauthenticatedAction.KICK,
@@ -103,6 +103,7 @@ public record SailGatewayConfig(
                     registry-id: "%s"
                     public-key-pinning: %s
                 %s
+                    api-key: "%s"
 
                   server:
                     id: "%s"
@@ -128,6 +129,7 @@ public record SailGatewayConfig(
                 config.registry().registryId(),
                 config.registry().publicKeyPinning(),
                 trustedKeysYaml(config.registry().trustedKeys()),
+                config.registry().apiKey(),
                 config.server().serverId(),
                 config.server().displayName(),
                 config.loginFlow().unauthenticatedAction().wireValue(),
@@ -145,7 +147,7 @@ public record SailGatewayConfig(
     }
 
     private static Registry defaultRegistry() {
-        return new Registry("self-hosted", LOCAL_REGISTRY_API_URL, LOCAL_REGISTRY_ID, false, List.of());
+        return new Registry("self-hosted", LOCAL_REGISTRY_API_URL, LOCAL_REGISTRY_ID, false, List.of(), "");
     }
 
     private static LoginFlow defaultLoginFlow() {
@@ -239,7 +241,8 @@ public record SailGatewayConfig(
                 : registry.trustedKeys().stream()
                         .map(SailGatewayConfig::normalizeTrustedKey)
                         .toList();
-        return new Registry(mode, apiUrl, registryId, registry.publicKeyPinning(), trustedKeys);
+        String apiKey = registry.apiKey() == null ? "" : registry.apiKey().trim();
+        return new Registry(mode, apiUrl, registryId, registry.publicKeyPinning(), trustedKeys, apiKey);
     }
 
     private static TrustedKey normalizeTrustedKey(TrustedKey key) {
@@ -300,7 +303,8 @@ public record SailGatewayConfig(
                 URI.create(node.node("api-url").getString(defaults.apiUrl().toString())),
                 node.node("registry-id").getString(defaults.registryId()),
                 node.node("public-key-pinning").getBoolean(defaults.publicKeyPinning()),
-                loadTrustedKeys(node, defaults.trustedKeys()));
+                loadTrustedKeys(node, defaults.trustedKeys()),
+                node.node("api-key").getString(defaults.apiKey()));
     }
 
     private static List<TrustedKey> loadTrustedKeys(ConfigurationNode node, List<TrustedKey> defaults) {
@@ -391,7 +395,8 @@ public record SailGatewayConfig(
             URI apiUrl,
             String registryId,
             boolean publicKeyPinning,
-            List<TrustedKey> trustedKeys) {}
+            List<TrustedKey> trustedKeys,
+            String apiKey) {}
 
     public record Server(String serverId, String displayName) {}
 

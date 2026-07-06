@@ -36,7 +36,7 @@ import {
   parseSessionPublicId,
   sessionPublicId,
 } from "./ids.js";
-import { getActiveServerById, serializeServerRecord } from "./server-records.js";
+import { getActiveServerById, recordServerHeartbeat, serializeServerRecord } from "./server-records.js";
 import { SessionSigner } from "./session-signer.js";
 import { selectPostgresVerificationPublicKeys } from "./signing-key-store.js";
 import { hashSecret } from "./token-hash.js";
@@ -924,6 +924,13 @@ export class PostgresChallengeService implements ChallengeService {
 
   getDatabase(): RegistryDatabase {
     return this.db;
+  }
+
+  async recordHeartbeat(serverId: string): Promise<void> {
+    const updated = await recordServerHeartbeat(this.db, this.config.registryId, serverId);
+    if (!updated) {
+      throw serverNotFound(serverId);
+    }
   }
 }
 

@@ -95,7 +95,8 @@ public final class SailGatewayPlugin {
             HttpSailRegistryClient registryClient = new HttpSailRegistryClient(
                     HttpClient.newHttpClient(),
                     loadedConfig.registry().apiUrl(),
-                    loadedConfig.loginFlow().authTimeout());
+                    loadedConfig.loginFlow().authTimeout(),
+                    loadedConfig.registry().apiKey());
             SailLimboRuntime.verifyRuntimeAvailable(
                     loadedConfig,
                     proxyServer.getPluginManager().isLoaded("limboapi"));

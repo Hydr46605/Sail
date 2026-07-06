@@ -160,3 +160,18 @@ export async function getServerByOwner(
     .where("owner_account_id", "=", accountId)
     .executeTakeFirst();
 }
+
+export async function recordServerHeartbeat(
+  db: RegistryDatabase,
+  registryId: string,
+  serverId: string,
+): Promise<boolean> {
+  const result = await db
+    .updateTable("servers")
+    .set({ last_heartbeat_at: sql`now()` })
+    .where("registry_id", "=", registryId)
+    .where("server_id", "=", serverId)
+    .where("status", "=", "active")
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows) > 0;
+}

@@ -503,6 +503,13 @@ export class InMemoryChallengeService implements ChallengeService {
   getDatabase(): RegistryDatabase | null {
     return null;
   }
+
+  recordHeartbeat(serverId: string): void {
+    if (serverId !== this.config.defaultServer.serverId) {
+      throw serverNotFound(serverId);
+    }
+    // In-memory service has no persistent state to update.
+  }
 }
 
 function serializeChallenge(challenge: PendingChallenge): ChallengeStatusResponse {

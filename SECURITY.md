@@ -6,6 +6,7 @@ Sail is an alpha project, but security issues should still be handled privately.
 
 | Version | Supported |
 | --- | --- |
+| `0.1.0-alpha.7` | Yes |
 | `0.1.0-alpha.1` | Yes |
 
 ## Reporting a Vulnerability

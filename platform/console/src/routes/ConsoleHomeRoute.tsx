@@ -20,6 +20,7 @@ export function ConsoleHomeRoute() {
   const [registryUrl, setRegistryUrl] = useState(() => readStoredRegistryUrl(runtimeConfig));
   const [auth, setAuth] = useState<StoredConsoleAuth | undefined>(readStoredAuth);
   const [started, setStarted] = useState(false);
+  const [deregisterSuccessServerId, setDeregisterSuccessServerId] = useState<string | null>(null);
   const effectiveRegistryUrl = runtimeConfig.registryLocked
     ? runtimeConfig.defaultRegistryUrl
     : registryUrl.trim() || runtimeConfig.defaultRegistryUrl;
@@ -70,7 +71,8 @@ export function ConsoleHomeRoute() {
       }
       return client.deregisterServer(auth.sessionToken, serverId);
     },
-    onSuccess: async () => {
+    onSuccess: async (_result, serverId) => {
+      setDeregisterSuccessServerId(serverId);
       await queryClient.invalidateQueries({
         queryKey: ["console-profile", effectiveRegistryUrl, auth?.sessionToken],
       });
@@ -120,6 +122,12 @@ export function ConsoleHomeRoute() {
     connectAuth(nextAuth);
     window.history.replaceState(null, "", getConsoleHomePath(consoleRouterBasePath));
   }, []);
+
+  useEffect(() => {
+    if (!deregisterSuccessServerId) return;
+    const timer = setTimeout(() => setDeregisterSuccessServerId(null), 5000);
+    return () => clearTimeout(timer);
+  }, [deregisterSuccessServerId]);
 
   const logout = () => {
     clearSessionAuth();
@@ -176,6 +184,7 @@ export function ConsoleHomeRoute() {
         deregisteringServerId={deregisterMutation.variables}
         isDeregistering={deregisterMutation.isPending}
         onDeregister={(serverId) => deregisterMutation.mutate(serverId)}
+        deregisterSuccessServerId={deregisterSuccessServerId}
       />
     </main>
   );

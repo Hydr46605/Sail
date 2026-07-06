@@ -1,4 +1,4 @@
-import { Activity, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
+import { Activity, CheckCircle2, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
 import type { ConsoleProfileResponse } from "../types.js";
 import { getSessionHealthLabel } from "../utils/helpers.js";
@@ -23,6 +23,7 @@ export function ProfileDashboard(props: {
   deregisteringServerId: string | undefined;
   isDeregistering: boolean;
   onDeregister: (serverId: string) => void;
+  deregisterSuccessServerId: string | null;
 }) {
   const accountTitle = props.profile?.account.display_name ?? props.profile?.account.account_id ?? "Sail Console";
 
@@ -61,6 +62,12 @@ export function ProfileDashboard(props: {
       {props.profileError ? <ErrorBanner error={props.profileError} /> : null}
       {props.revokeError ? <ErrorBanner error={props.revokeError} /> : null}
       {props.deregisterError ? <ErrorBanner error={props.deregisterError} /> : null}
+      {props.deregisterSuccessServerId ? (
+        <div className="success-banner" role="status" aria-live="polite">
+          <CheckCircle2 aria-hidden="true" size={18} />
+          <span>Server <strong>{props.deregisterSuccessServerId}</strong> has been deregistered. Its API key has been revoked.</span>
+        </div>
+      ) : null}
 
       {props.isLoading ? (
         <section className="console-panel compact-panel" aria-live="polite">

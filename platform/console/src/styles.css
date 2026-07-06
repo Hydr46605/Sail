@@ -84,8 +84,7 @@ code {
 }
 
 .console-panel,
-.console-section,
-.error-banner {
+.console-section {
   border: 1px solid var(--console-line);
   border-radius: 8px;
   background: var(--console-panel);
@@ -798,12 +797,15 @@ h2 {
 }
 
 .error-banner {
-  display: grid;
-  gap: 4px;
-  border-color: #d5a7a0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d5a7a0;
+  border-radius: 8px;
   background: #fff0ee;
   color: #7a2d25;
   padding: 14px 16px;
+  font-size: 0.9rem;
 }
 
 .success-banner {

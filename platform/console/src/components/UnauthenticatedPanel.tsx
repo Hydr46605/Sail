@@ -2,8 +2,8 @@ import { type FormEvent, useState } from "react";
 import { ExternalLink, UserPlus } from "lucide-react";
 import type { ConsoleAuthChallengeResponse } from "../types.js";
 import type { StoredConsoleAuth } from "../auth.js";
-import { getAuthStepLabel } from "../utils/helpers.js";
-import { ErrorBanner } from "./ErrorBanner.js";
+import { formatError, getAuthStepLabel } from "../utils/helpers.js";
+import { Banner } from "./Banner.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 import { TokenImportDialog } from "./TokenImportDialog.js";
 
@@ -114,7 +114,7 @@ export function UnauthenticatedPanel(props: {
             ) : null}
           </div>
         ) : null}
-        {props.authChallengeError ? <ErrorBanner error={props.authChallengeError} /> : null}
+        {props.authChallengeError ? <Banner variant="error">{formatError(props.authChallengeError)}</Banner> : null}
         {props.registryLocked ? null : (
           <details className="developer-tools">
             <summary>Developer tools</summary>

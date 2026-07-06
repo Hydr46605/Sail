@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { RegisterServerInput } from "../types.js";
+import { Banner } from "./Banner.js";
 
 interface ServerRegistrationFormProps {
   onSubmit: (input: RegisterServerInput) => void;
@@ -39,7 +40,7 @@ export function ServerRegistrationForm({
     <form onSubmit={handleSubmit} className="console-section">
       <h3 className="section-heading">Register New Server</h3>
       
-      {error && <div className="error-banner" role="alert">{error}</div>}
+      {error ? <Banner variant="error">{error}</Banner> : null}
       
       <div className="field-group">
         <label htmlFor="server-id" className="field-label">

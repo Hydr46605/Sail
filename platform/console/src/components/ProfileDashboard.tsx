@@ -1,10 +1,9 @@
 import { Activity, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
 import type { ConsoleProfileResponse } from "../types.js";
-import { getSessionHealthLabel } from "../utils/helpers.js";
+import { formatError, getSessionHealthLabel } from "../utils/helpers.js";
 import { DashboardContent } from "./DashboardContent.js";
-import { ErrorBanner } from "./ErrorBanner.js";
-import { SuccessBanner } from "./SuccessBanner.js";
+import { Banner } from "./Banner.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 
 export function ProfileDashboard(props: {
@@ -61,14 +60,14 @@ export function ProfileDashboard(props: {
         </div>
       </header>
 
-      {props.profileError ? <ErrorBanner error={props.profileError} /> : null}
-      {props.revokeError ? <ErrorBanner error={props.revokeError} /> : null}
-      {props.deregisterError ? <ErrorBanner error={props.deregisterError} /> : null}
+      {props.profileError ? <Banner variant="error">{formatError(props.profileError)}</Banner> : null}
+      {props.revokeError ? <Banner variant="error">{formatError(props.revokeError)}</Banner> : null}
+      {props.deregisterError ? <Banner variant="error">{formatError(props.deregisterError)}</Banner> : null}
       {props.deregisterSuccessServerId ? (
-        <SuccessBanner>Server <strong>{props.deregisterSuccessServerId}</strong> has been deregistered. Its API key has been revoked.</SuccessBanner>
+        <Banner variant="success">Server <strong>{props.deregisterSuccessServerId}</strong> has been deregistered. Its API key has been revoked.</Banner>
       ) : null}
       {props.revokeSuccessSessionId ? (
-        <SuccessBanner>Session <code>{props.revokeSuccessSessionId}</code> has been revoked.</SuccessBanner>
+        <Banner variant="success">Session <code>{props.revokeSuccessSessionId}</code> has been revoked.</Banner>
       ) : null}
 
       {props.isLoading ? (

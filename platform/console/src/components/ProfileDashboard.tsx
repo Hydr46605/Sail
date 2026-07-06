@@ -1,9 +1,10 @@
-import { Activity, CheckCircle2, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
+import { Activity, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
 import type { ConsoleProfileResponse } from "../types.js";
 import { getSessionHealthLabel } from "../utils/helpers.js";
 import { DashboardContent } from "./DashboardContent.js";
 import { ErrorBanner } from "./ErrorBanner.js";
+import { SuccessBanner } from "./SuccessBanner.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 
 export function ProfileDashboard(props: {
@@ -64,16 +65,10 @@ export function ProfileDashboard(props: {
       {props.revokeError ? <ErrorBanner error={props.revokeError} /> : null}
       {props.deregisterError ? <ErrorBanner error={props.deregisterError} /> : null}
       {props.deregisterSuccessServerId ? (
-        <div className="success-banner" role="status" aria-live="polite">
-          <CheckCircle2 aria-hidden="true" size={18} />
-          <span>Server <strong>{props.deregisterSuccessServerId}</strong> has been deregistered. Its API key has been revoked.</span>
-        </div>
+        <SuccessBanner>Server <strong>{props.deregisterSuccessServerId}</strong> has been deregistered. Its API key has been revoked.</SuccessBanner>
       ) : null}
       {props.revokeSuccessSessionId ? (
-        <div className="success-banner" role="status" aria-live="polite">
-          <CheckCircle2 aria-hidden="true" size={18} />
-          <span>Session <code>{props.revokeSuccessSessionId}</code> has been revoked.</span>
-        </div>
+        <SuccessBanner>Session <code>{props.revokeSuccessSessionId}</code> has been revoked.</SuccessBanner>
       ) : null}
 
       {props.isLoading ? (

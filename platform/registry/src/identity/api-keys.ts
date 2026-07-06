@@ -25,7 +25,7 @@ const AUDIENCE = "sail-gateway";
 const SCOPE = "api_key";
 
 export async function generateApiKeyJwt(
-  config: Pick<SailRegistryConfig, "registryId" | "privateKey" | "signingKeyFingerprint">,
+  config: Pick<SailRegistryConfig, "registryId" | "privateKey">,
   serverId: string,
   accountId: string,
 ): Promise<ServerApiKeyResult> {
@@ -33,6 +33,7 @@ export async function generateApiKeyJwt(
   const exp = now + API_KEY_EXPIRY_SECONDS;
   const privateJwk = config.privateKey as SailPrivateJwk;
   const key = await importJWK(privateJwk, "ES256");
+  const keyKid = privateJwk.kid;
 
   const jwt = await new SignJWT({
     sub: serverId,
@@ -41,14 +42,14 @@ export async function generateApiKeyJwt(
     aud: AUDIENCE,
     scope: SCOPE,
   })
-    .setProtectedHeader({ alg: "ES256", kid: config.signingKeyFingerprint })
+    .setProtectedHeader({ alg: "ES256", kid: keyKid })
     .setIssuedAt(now)
     .setExpirationTime(exp)
     .sign(key);
 
   return {
     apiKey: jwt,
-    apiKeyJwkId: config.signingKeyFingerprint,
+    apiKeyJwkId: keyKid,
     issuedAt: new Date(now * 1000),
     expiresAt: new Date(exp * 1000),
   };

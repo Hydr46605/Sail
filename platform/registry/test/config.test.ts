@@ -166,7 +166,7 @@ describe("registry config", () => {
     }
   });
 
-  test("rejects group-readable signing key files by default", () => {
+  test.skipIf(process.platform === "win32")("rejects group-readable signing key files by default", () => {
     const dir = mkdtempSync(join(tmpdir(), "sail-key-"));
     try {
       const file = join(dir, "signing-key.jwk.json");

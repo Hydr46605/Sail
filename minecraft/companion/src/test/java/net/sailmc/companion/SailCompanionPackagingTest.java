@@ -26,7 +26,7 @@ final class SailCompanionPackagingTest {
 
     @Test
     void defaultConfigContainsCompanionDiagnosticsOptions() {
-        String config = readRequiredResource("config.yml");
+        String config = readRequiredResource("config.yml").replace("\r\n", "\n");
 
         assertTrue(config.contains("""
                 sail:

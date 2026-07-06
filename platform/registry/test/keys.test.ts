@@ -9,7 +9,7 @@ import {
 } from "../src/keys.js";
 
 describe("registry key operator tooling", () => {
-  test("generates a private JWK file with owner-only permissions", async () => {
+  test.skipIf(process.platform === "win32")("generates a private JWK file with owner-only permissions", async () => {
     const dir = mkdtempSync(join(tmpdir(), "sail-key-tool-"));
     try {
       const file = join(dir, "generated.jwk.json");

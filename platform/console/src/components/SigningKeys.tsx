@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { createSailConsoleApiClient } from "../api.js";
+import { createSailConsoleApiClient, SailConsoleApiError } from "../api.js";
 import type { SigningKey } from "../types.js";
 import { formatDateTime } from "../utils/helpers.js";
 
@@ -16,6 +16,7 @@ export function SigningKeys(props: { sessionToken: string }) {
   const [keys, setKeys] = useState<SigningKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
   const [revokingKid, setRevokingKid] = useState<string | null>(null);
   const [confirmKid, setConfirmKid] = useState<string | null>(null);
 
@@ -23,7 +24,14 @@ export function SigningKeys(props: { sessionToken: string }) {
     const client = createSailConsoleApiClient();
     client.getSigningKeys(props.sessionToken)
       .then((data) => setKeys(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load signing keys"))
+      .catch((err) => {
+        if (err instanceof SailConsoleApiError && err.status === 404) {
+          setKeys([]);
+          setUnavailable(true);
+        } else {
+          setError(err instanceof Error ? err.message : "Failed to load signing keys");
+        }
+      })
       .finally(() => setLoading(false));
   };
 
@@ -49,6 +57,10 @@ export function SigningKeys(props: { sessionToken: string }) {
 
   if (error) {
     return <p className="audit-error">{error}</p>;
+  }
+
+  if (unavailable) {
+    return <p className="empty-state">Signing key management is not available on this registry version.</p>;
   }
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createSailConsoleApiClient } from "../api.js";
+import { createSailConsoleApiClient, SailConsoleApiError } from "../api.js";
 import type { AuditEvent } from "../types.js";
 import { formatDateTime } from "../utils/helpers.js";
 
@@ -14,12 +14,20 @@ export function AuditLog(props: { sessionToken: string }) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     const client = createSailConsoleApiClient();
     client.getAuditEvents(props.sessionToken, 100)
       .then((data) => setEvents(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load audit events"))
+      .catch((err) => {
+        if (err instanceof SailConsoleApiError && err.status === 404) {
+          setEvents([]);
+          setUnavailable(true);
+        } else {
+          setError(err instanceof Error ? err.message : "Failed to load audit events");
+        }
+      })
       .finally(() => setLoading(false));
   }, [props.sessionToken]);
 
@@ -29,6 +37,10 @@ export function AuditLog(props: { sessionToken: string }) {
 
   if (error) {
     return <p className="audit-error">{error}</p>;
+  }
+
+  if (unavailable) {
+    return <p className="empty-state">Audit events are not available on this registry version.</p>;
   }
 
   return (

@@ -36,6 +36,12 @@
       "name": "Names"
     },
     {
+      "name": "Audit"
+    },
+    {
+      "name": "Signing Keys"
+    },
+    {
       "name": "Federation"
     }
   ],
@@ -878,6 +884,163 @@
                 "schema": {
                   "$ref": "../schemas/error.v1.schema.json"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/console/audit-events": {
+      "get": {
+        "tags": ["Audit"],
+        "operationId": "getAuditEvents",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit events for the authenticated account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["id", "event_type", "severity", "metadata_json", "created_at"],
+                    "properties": {
+                      "id": { "type": "string" },
+                      "event_type": { "type": "string" },
+                      "severity": { "type": "string", "enum": ["info", "warning", "high", "critical"] },
+                      "metadata_json": { "type": "object" },
+                      "created_at": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/error.v1.schema.json" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/console/signing-keys": {
+      "get": {
+        "tags": ["Signing Keys"],
+        "operationId": "getSigningKeys",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signing keys for the registry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kid", "status", "source", "activated_at"],
+                    "properties": {
+                      "kid": { "type": "string" },
+                      "status": { "type": "string", "enum": ["active", "retiring", "retired", "revoked"] },
+                      "source": { "type": "string" },
+                      "fingerprint": { "type": "string" },
+                      "activated_at": { "type": "string", "format": "date-time" },
+                      "retired_at": { "type": "string", "format": "date-time" },
+                      "revoked_at": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/error.v1.schema.json" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/console/signing-keys/{kid}/revoke": {
+      "post": {
+        "tags": ["Signing Keys"],
+        "operationId": "revokeSigningKey",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signing key revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kid", "status", "revoked_at"],
+                  "properties": {
+                    "kid": { "type": "string" },
+                    "status": { "const": "revoked" },
+                    "revoked_at": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/error.v1.schema.json" }
+              }
+            }
+          },
+          "404": {
+            "description": "Signing key not found.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/error.v1.schema.json" }
               }
             }
           }

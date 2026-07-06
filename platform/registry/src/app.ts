@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions, type FastifyR
 import { Type } from "@sinclair/typebox";
 import { InMemoryChallengeService } from "./challenges.js";
 import {
+  type AuditEventSummary,
   type ChallengeCompletionResponse,
   type ChallengeService,
   type ChallengeServiceDependencies,
@@ -13,6 +14,7 @@ import {
   type NameLookupResponse,
   type OAuthCompletionInput,
   type SessionVerificationInput,
+  type SigningKeySummary,
 } from "./identity/challenge-service.js";
 import type { SailRegistryConfig } from "./config.js";
 import type { DiscordOAuthConfig, GitHubOAuthConfig, GoogleOAuthConfig } from "./config.js";
@@ -1084,6 +1086,143 @@ export function buildRegistryApp(
           return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
         }
         return await challenges.deregisterServer(token, request.params.server_id);
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.get<{ Querystring: { limit?: number }; Headers: { authorization?: string } }>(
+    "/v1/console/audit-events",
+    {
+      config: {
+        rateLimit: { max: 30, timeWindow: "1 minute" },
+      },
+      schema: {
+        querystring: Type.Object({
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
+        }),
+        headers: Type.Object({ authorization: Type.Optional(Type.String()) }),
+        response: {
+          200: Type.Array(
+            Type.Object({
+              id: Type.String(),
+              event_type: Type.String(),
+              severity: Type.Union([
+                Type.Literal("info"),
+                Type.Literal("warning"),
+                Type.Literal("high"),
+                Type.Literal("critical"),
+              ]),
+              metadata_json: Type.Record(Type.String(), Type.Unknown()),
+              created_at: Type.String({ format: "date-time" }),
+            }, { additionalProperties: false }),
+          ),
+          401: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const token = request.headers.authorization?.startsWith("Bearer ")
+          ? request.headers.authorization.slice("Bearer ".length).trim()
+          : undefined;
+        if (!token) {
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+        }
+        const limit = typeof request.query.limit === "number" ? request.query.limit : 50;
+        return await challenges.getAuditEvents(token, limit);
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.get<{ Headers: { authorization?: string } }>(
+    "/v1/console/signing-keys",
+    {
+      config: {
+        rateLimit: { max: 30, timeWindow: "1 minute" },
+      },
+      schema: {
+        headers: Type.Object({ authorization: Type.Optional(Type.String()) }),
+        response: {
+          200: Type.Array(
+            Type.Object({
+              kid: Type.String(),
+              status: Type.Union([
+                Type.Literal("active"),
+                Type.Literal("retiring"),
+                Type.Literal("retired"),
+                Type.Literal("revoked"),
+              ]),
+              source: Type.String(),
+              fingerprint: Type.Union([Type.String(), Type.Null()]),
+              created_at: Type.String({ format: "date-time" }),
+              activated_at: Type.String({ format: "date-time" }),
+              retired_at: Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
+              revoked_at: Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
+            }, { additionalProperties: false }),
+          ),
+          401: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const token = request.headers.authorization?.startsWith("Bearer ")
+          ? request.headers.authorization.slice("Bearer ".length).trim()
+          : undefined;
+        if (!token) {
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+        }
+        return await challenges.getSigningKeys(token);
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post<{
+    Params: { kid: string };
+    Headers: { authorization?: string };
+  }>(
+    "/v1/console/signing-keys/:kid/revoke",
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: "1 minute" },
+      },
+      schema: {
+        params: Type.Object({ kid: Type.String({ minLength: 1, maxLength: 128 }) }),
+        headers: Type.Object({ authorization: Type.Optional(Type.String()) }),
+        response: {
+          200: Type.Object({
+            kid: Type.String(),
+            status: Type.Literal("revoked"),
+          }, { additionalProperties: false }),
+          401: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const token = request.headers.authorization?.startsWith("Bearer ")
+          ? request.headers.authorization.slice("Bearer ".length).trim()
+          : undefined;
+        if (!token) {
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+        }
+        return await challenges.revokeSigningKey(token, request.params.kid);
       } catch (error) {
         if (error instanceof SailChallengeError) {
           return reply.code(error.statusCode).send(error.body);

@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Activity, KeyRound, Link2, Server } from "lucide-react";
+import { Activity, History, KeyRound, Link2, Server, ShieldCheck } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
 import { createSailConsoleApiClient } from "../api.js";
 import type { ConsoleProfileResponse } from "../types.js";
 import { countActiveSessions, formatProviderLabel, getOperatorSummary } from "../utils/helpers.js";
+import { AuditLog } from "./AuditLog.js";
 import { Metric } from "./Metric.js";
 import { NameLookup } from "./NameLookup.js";
 import { ServerApiKeyDeliveryModal } from "./ServerApiKeyDeliveryModal.js";
 import { ServerCard } from "./ServerCard.js";
 import { ServerRegistrationForm } from "./ServerRegistrationForm.js";
 import { SessionRow } from "./SessionRow.js";
+import { SigningKeys } from "./SigningKeys.js";
 import { StatusPill } from "./StatusPill.js";
 import { useServerRegistration } from "../hooks/useServerRegistration.js";
 
@@ -229,6 +231,28 @@ export function DashboardContent(props: {
             claimCode={result.claim_code}
           />
         )}
+      </section>
+
+      <section className="console-section" aria-labelledby="signing-keys-heading">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Security</span>
+            <h2 id="signing-keys-heading">Signing Keys</h2>
+          </div>
+          <ShieldCheck aria-hidden="true" size={20} />
+        </div>
+        <SigningKeys sessionToken={props.auth.sessionToken} />
+      </section>
+
+      <section className="console-section" aria-labelledby="audit-heading">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Audit</span>
+            <h2 id="audit-heading">Activity Log</h2>
+          </div>
+          <History aria-hidden="true" size={20} />
+        </div>
+        <AuditLog sessionToken={props.auth.sessionToken} />
       </section>
     </>
   );

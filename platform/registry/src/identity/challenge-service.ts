@@ -220,10 +220,32 @@ export interface ChallengeService {
   recordHeartbeat(serverId: string): Promise<void> | void;
   lookupName(canonicalName: string): Promise<NameLookupResponse>;
   deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse>;
+  getAuditEvents(sessionToken: string, limit?: number): Promise<AuditEventSummary[]>;
+  getSigningKeys(sessionToken: string): Promise<SigningKeySummary[]>;
+  revokeSigningKey(sessionToken: string, kid: string): Promise<{ kid: string; status: "revoked" }>;
 }
 
 export interface ServerDeregistrationResponse {
   protocol_version: "sail-protocol-v1";
   server_id: string;
   status: "disabled";
+}
+
+export interface AuditEventSummary {
+  id: string;
+  event_type: string;
+  severity: "info" | "warning" | "high" | "critical";
+  metadata_json: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SigningKeySummary {
+  kid: string;
+  status: "active" | "retiring" | "retired" | "revoked";
+  source: string;
+  fingerprint: string | null;
+  created_at: string;
+  activated_at: string;
+  retired_at: string | null;
+  revoked_at: string | null;
 }

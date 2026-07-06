@@ -129,3 +129,27 @@ export interface ServerDeregistrationResponse {
   server_id: string;
   status: "disabled";
 }
+
+export interface AuditEvent {
+  id: string;
+  event_type: string;
+  severity: "info" | "warning" | "high" | "critical";
+  metadata_json: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SigningKey {
+  kid: string;
+  status: "active" | "retiring" | "retired" | "revoked";
+  source: string;
+  fingerprint: string | null;
+  created_at: string;
+  activated_at: string;
+  retired_at: string | null;
+  revoked_at: string | null;
+}
+
+export interface SigningKeyRevokeResponse {
+  kid: string;
+  status: "revoked";
+}

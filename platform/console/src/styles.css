@@ -1157,6 +1157,97 @@ h2 {
   background: rgba(6, 9, 12, 0.68);
 }
 
+/* Audit Log */
+
+.audit-severity-pill {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audit-severity-info {
+  border: 1px solid #a8c3d5;
+  background: #edf7fb;
+  color: var(--console-teal-strong);
+}
+
+.audit-severity-warning {
+  border: 1px solid #d8c995;
+  background: #fff8df;
+  color: #6f5713;
+}
+
+.audit-severity-high {
+  border: 1px solid #d5a7a0;
+  background: #fff0ee;
+  color: #8f352d;
+}
+
+.audit-severity-critical {
+  border: 1px solid #c44;
+  background: #fdd;
+  color: #a00;
+}
+
+.audit-metadata {
+  display: block;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--console-muted);
+  font-size: 0.82rem;
+}
+
+.audit-error {
+  color: var(--console-red);
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .audit-severity-info {
+  border-color: #3e6d82;
+  background: #1d3440;
+  color: #a7d6e9;
+}
+
+[data-theme="dark"] .audit-severity-warning {
+  border-color: #74652b;
+  background: #332f1f;
+  color: #e3d27c;
+}
+
+[data-theme="dark"] .audit-severity-high {
+  border-color: #7f433c;
+  background: #3b2422;
+  color: #e6aaa3;
+}
+
+[data-theme="dark"] .audit-severity-critical {
+  border-color: #944;
+  background: #422;
+  color: #f99;
+}
+
+[data-theme="dark"] .audit-metadata {
+  color: #a8b3bd;
+}
+
+[data-theme="dark"] .audit-error {
+  color: #e8aaa2;
+}
+
+/* Signing Keys */
+
+.signing-keys-table .icon-button {
+  min-height: 32px;
+  width: 32px;
+}
+
 @media (max-width: 900px) {
   .next-step-panel {
     grid-template-columns: 1fr;

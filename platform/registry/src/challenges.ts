@@ -6,6 +6,7 @@ import type { SailJwk } from "./config.js";
 import type { RegistryDatabase } from "./db/schema.js";
 import { createPremiumNameLookup, type PremiumNameLookup } from "./premium-names.js";
 import {
+  type AuditEventSummary,
   type ChallengeCreatedResponse,
   type ChallengeCompletionResponse,
   type ChallengeMode,
@@ -23,6 +24,7 @@ import {
   type ServerRecordResponse,
   type SessionVerificationInput,
   type SessionVerificationResponse,
+  type SigningKeySummary,
 } from "./identity/challenge-service.js";
 import {
   buildAuthUrl,
@@ -559,6 +561,18 @@ export class InMemoryChallengeService implements ChallengeService {
 
   async deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse> {
     throw createSailError("unavailable", 503, true, "Server deregistration requires PostgreSQL backend.");
+  }
+
+  async getAuditEvents(_sessionToken: string, _limit?: number): Promise<AuditEventSummary[]> {
+    throw createSailError("unavailable", 503, true, "Audit events require PostgreSQL backend.");
+  }
+
+  async getSigningKeys(_sessionToken: string): Promise<SigningKeySummary[]> {
+    throw createSailError("unavailable", 503, true, "Signing key management requires PostgreSQL backend.");
+  }
+
+  async revokeSigningKey(_sessionToken: string, _kid: string): Promise<{ kid: string; status: "revoked" }> {
+    throw createSailError("unavailable", 503, true, "Signing key management requires PostgreSQL backend.");
   }
 }
 

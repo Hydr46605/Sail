@@ -1,4 +1,5 @@
 import type {
+  AuditEvent,
   ClaimCodeResponse,
   ConsoleAuthChallengeInput,
   ConsoleAuthChallengeResponse,
@@ -9,6 +10,8 @@ import type {
   SailErrorResponse,
   ServerDeregistrationResponse,
   SessionRevocationResponse,
+  SigningKey,
+  SigningKeyRevokeResponse,
 } from "./types.js";
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -32,6 +35,9 @@ export interface SailConsoleApiClient {
   claimServerApiKey(claimCode: string): Promise<ClaimCodeResponse>;
   lookupName(name: string): Promise<NameLookupResponse>;
   deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse>;
+  getAuditEvents(sessionToken: string, limit?: number): Promise<AuditEvent[]>;
+  getSigningKeys(sessionToken: string): Promise<SigningKey[]>;
+  revokeSigningKey(sessionToken: string, kid: string): Promise<SigningKeyRevokeResponse>;
 }
 
 export function createSailConsoleApiClient(options: {
@@ -86,6 +92,23 @@ export function createSailConsoleApiClient(options: {
     },
     async deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse> {
       return requestJson(fetchImpl, `${baseUrl}/v1/servers/${encodeURIComponent(serverId)}/deregister`, {
+        method: "POST",
+        sessionToken: requireSessionToken(sessionToken),
+      });
+    },
+    async getAuditEvents(sessionToken: string, limit?: number): Promise<AuditEvent[]> {
+      const qs = limit != null ? `?limit=${limit}` : "";
+      return requestJson(fetchImpl, `${baseUrl}/v1/console/audit-events${qs}`, {
+        sessionToken: requireSessionToken(sessionToken),
+      });
+    },
+    async getSigningKeys(sessionToken: string): Promise<SigningKey[]> {
+      return requestJson(fetchImpl, `${baseUrl}/v1/console/signing-keys`, {
+        sessionToken: requireSessionToken(sessionToken),
+      });
+    },
+    async revokeSigningKey(sessionToken: string, kid: string): Promise<SigningKeyRevokeResponse> {
+      return requestJson(fetchImpl, `${baseUrl}/v1/console/signing-keys/${encodeURIComponent(kid)}/revoke`, {
         method: "POST",
         sessionToken: requireSessionToken(sessionToken),
       });

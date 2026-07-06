@@ -6,6 +6,7 @@ import type { SailJwk, SailRegistryConfig } from "../config.js";
 import type { RegistryDatabase, RegistryDatabaseSchema } from "../db/schema.js";
 import { createPremiumNameLookup, type PremiumNameLookup } from "../premium-names.js";
 import {
+  type AuditEventSummary,
   type ChallengeCreatedResponse,
   type ChallengeCompletionResponse,
   type ChallengeService,
@@ -22,6 +23,7 @@ import {
   type ServerRecordResponse,
   type SessionVerificationInput,
   type SessionVerificationResponse,
+  type SigningKeySummary,
 } from "./challenge-service.js";
 import {
   buildAuthUrl,
@@ -40,7 +42,7 @@ import {
 } from "./ids.js";
 import { getActiveServerById, recordServerHeartbeat, serializeServerRecord } from "./server-records.js";
 import { SessionSigner } from "./session-signer.js";
-import { selectPostgresVerificationPublicKeys } from "./signing-key-store.js";
+import { revokePostgresSigningKey, selectPostgresVerificationPublicKeys } from "./signing-key-store.js";
 import { hashSecret } from "./token-hash.js";
 
 type RegistryExecutor = RegistryDatabase | Transaction<RegistryDatabaseSchema>;
@@ -955,6 +957,52 @@ export class PostgresChallengeService implements ChallengeService {
       server_id: serverId,
       status: "disabled",
     };
+  }
+
+  async getAuditEvents(sessionToken: string, limit = 50): Promise<AuditEventSummary[]> {
+    const authenticated = await this.authenticateConsoleSession(sessionToken);
+    const rows = await this.db
+      .selectFrom("audit_events")
+      .select(["id", "event_type", "severity", "metadata_json", "created_at"])
+      .where("target_account_id", "=", authenticated.accountId)
+      .orderBy("created_at", "desc")
+      .limit(Math.min(limit, 200))
+      .execute();
+
+    return rows.map((row) => ({
+      id: row.id,
+      event_type: row.event_type,
+      severity: row.severity,
+      metadata_json: row.metadata_json as Record<string, unknown>,
+      created_at: row.created_at.toISOString(),
+    }));
+  }
+
+  async getSigningKeys(sessionToken: string): Promise<SigningKeySummary[]> {
+    await this.authenticateConsoleSession(sessionToken);
+    const rows = await this.db
+      .selectFrom("registry_signing_keys")
+      .select(["kid", "status", "source", "fingerprint", "created_at", "activated_at", "retired_at", "revoked_at"])
+      .where("registry_id", "=", this.config.registryId)
+      .orderBy("created_at", "asc")
+      .execute();
+
+    return rows.map((row) => ({
+      kid: row.kid,
+      status: row.status,
+      source: row.source,
+      fingerprint: row.fingerprint,
+      created_at: row.created_at.toISOString(),
+      activated_at: row.activated_at.toISOString(),
+      retired_at: row.retired_at?.toISOString() ?? null,
+      revoked_at: row.revoked_at?.toISOString() ?? null,
+    }));
+  }
+
+  async revokeSigningKey(sessionToken: string, kid: string): Promise<{ kid: string; status: "revoked" }> {
+    await this.authenticateConsoleSession(sessionToken);
+    await revokePostgresSigningKey(this.config.registryId, kid, this.db);
+    return { kid, status: "revoked" as const };
   }
 
   async lookupName(canonicalName: string): Promise<NameLookupResponse> {

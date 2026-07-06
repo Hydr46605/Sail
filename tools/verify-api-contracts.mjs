@@ -22,6 +22,9 @@ const currentServedRoutes = [
   "/v1/servers/heartbeat",
   "/v1/servers/{server_id}",
   "/v1/servers/{server_id}/deregister",
+  "/v1/console/audit-events",
+  "/v1/console/signing-keys",
+  "/v1/console/signing-keys/{kid}/revoke",
 ];
 
 const errors = [];

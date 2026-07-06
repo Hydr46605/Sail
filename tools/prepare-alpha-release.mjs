@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(new URL("..", import.meta.url).pathname);
+const root = join(fileURLToPath(import.meta.url), "..", "..");
 const sourceManifestPath = join(root, "release/sail-alpha-manifest.json");
 const outputDir = join(root, "dist/release");
 const filesDir = join(outputDir, "files");

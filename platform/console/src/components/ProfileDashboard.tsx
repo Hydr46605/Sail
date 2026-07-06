@@ -19,6 +19,10 @@ export function ProfileDashboard(props: {
   onLogout: () => void;
   onRefresh: () => void;
   onRevoke: (sessionId: string) => void;
+  deregisterError: unknown;
+  deregisteringServerId: string | undefined;
+  isDeregistering: boolean;
+  onDeregister: (serverId: string) => void;
 }) {
   const accountTitle = props.profile?.account.display_name ?? props.profile?.account.account_id ?? "Sail Console";
 
@@ -56,6 +60,7 @@ export function ProfileDashboard(props: {
 
       {props.profileError ? <ErrorBanner error={props.profileError} /> : null}
       {props.revokeError ? <ErrorBanner error={props.revokeError} /> : null}
+      {props.deregisterError ? <ErrorBanner error={props.deregisterError} /> : null}
 
       {props.isLoading ? (
         <section className="console-panel compact-panel" aria-live="polite">
@@ -72,6 +77,9 @@ export function ProfileDashboard(props: {
           revokingSessionId={props.revokingSessionId}
           isRevoking={props.isRevoking}
           onRevoke={props.onRevoke}
+          deregisteringServerId={props.deregisteringServerId}
+          isDeregistering={props.isDeregistering}
+          onDeregister={props.onDeregister}
         />
       ) : null}
     </div>

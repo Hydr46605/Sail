@@ -63,6 +63,20 @@ export function ConsoleHomeRoute() {
     mutationFn: (username: string) => client.createConsoleAuthChallenge({ username }),
   });
 
+  const deregisterMutation = useMutation({
+    mutationFn: async (serverId: string) => {
+      if (!auth) {
+        throw new Error("Missing Sail session token");
+      }
+      return client.deregisterServer(auth.sessionToken, serverId);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["console-profile", effectiveRegistryUrl, auth?.sessionToken],
+      });
+    },
+  });
+
   const clearSessionAuth = () => {
     clearStoredAuth();
     setAuth(undefined);
@@ -158,6 +172,10 @@ export function ConsoleHomeRoute() {
         onLogout={logout}
         onRefresh={() => void profileQuery.refetch()}
         onRevoke={(sessionId) => revokeMutation.mutate(sessionId)}
+        deregisterError={deregisterMutation.error}
+        deregisteringServerId={deregisterMutation.variables}
+        isDeregistering={deregisterMutation.isPending}
+        onDeregister={(serverId) => deregisterMutation.mutate(serverId)}
       />
     </main>
   );

@@ -554,6 +554,48 @@ h2 {
   gap: 6px;
 }
 
+.server-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ghost-button.danger {
+  border-color: #d5a7a0;
+  color: var(--console-red);
+}
+
+.ghost-button.danger:hover:not(:disabled) {
+  border-color: var(--console-red);
+  background: #fff0ee;
+}
+
+.primary-button.danger-fill {
+  border-color: #7a2d25;
+  background: var(--console-red);
+  color: #ffffff;
+}
+
+.primary-button.danger-fill:hover:not(:disabled) {
+  background: #7a2d25;
+}
+
+.confirm-dialog {
+  max-width: 440px;
+}
+
+.confirm-description {
+  color: var(--console-text);
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.dialog-close-x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
 .heartbeat-pill {
   display: inline-flex;
   min-height: 28px;
@@ -1066,6 +1108,25 @@ h2 {
   border-color: #7f433c;
   background: #3b2422;
   color: #f0b6af;
+}
+
+[data-theme="dark"] .ghost-button.danger {
+  border-color: #7f433c;
+  color: #e8aaa2;
+}
+
+[data-theme="dark"] .ghost-button.danger:hover:not(:disabled) {
+  border-color: #e8aaa2;
+  background: #3b2422;
+}
+
+[data-theme="dark"] .primary-button.danger-fill {
+  border-color: #e8aaa2;
+  background: #8f352d;
+}
+
+[data-theme="dark"] .primary-button.danger-fill:hover:not(:disabled) {
+  background: #7a2d25;
 }
 
 [data-theme="dark"] .dialog-overlay {

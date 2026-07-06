@@ -19,6 +19,9 @@ export function DashboardContent(props: {
   revokingSessionId: string | undefined;
   isRevoking: boolean;
   onRevoke: (sessionId: string) => void;
+  deregisteringServerId: string | undefined;
+  isDeregistering: boolean;
+  onDeregister: (serverId: string) => void;
 }) {
   const operatorSummary = getOperatorSummary(props.profile);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
@@ -193,7 +196,12 @@ export function DashboardContent(props: {
         <div className="server-list">
           {props.profile.trusted_servers.length > 0 ? (
             props.profile.trusted_servers.map((server) => (
-              <ServerCard key={`${server.registry_id}:${server.server_id}`} server={server} />
+              <ServerCard
+                key={`${server.registry_id}:${server.server_id}`}
+                server={server}
+                onDeregister={props.onDeregister}
+                isDeregistering={props.isDeregistering && props.deregisteringServerId === server.server_id}
+              />
             ))
           ) : (
             <span className="empty-state">No trusted servers</span>

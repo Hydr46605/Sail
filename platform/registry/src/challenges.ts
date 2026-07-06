@@ -109,6 +109,7 @@ export class InMemoryChallengeService implements ChallengeService {
       privacy_mode: server.privacyMode,
       status: "active",
       public_listing: server.publicListing,
+      last_heartbeat_at: null,
     };
   }
 

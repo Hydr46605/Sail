@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
@@ -51,6 +52,8 @@ public final class SailGatewayPlugin {
     private volatile SailLoginDecisionService loginDecisionService;
     private volatile SailLimboController limboController = SailLimboController.DISABLED;
     private volatile String lastInitializationError;
+    private volatile String lastHeartbeatStatus = "never";
+    private volatile com.velocitypowered.api.scheduler.ScheduledTask heartbeatTask;
 
     @Inject
     public SailGatewayPlugin(ProxyServer proxyServer, Logger logger, @DataDirectory Path dataDirectory) {
@@ -72,6 +75,7 @@ public final class SailGatewayPlugin {
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
+        disposeHeartbeatTask();
         disposeLimboController();
     }
 
@@ -111,11 +115,13 @@ public final class SailGatewayPlugin {
                         loginDecisionService);
             }
             disposeLimboController();
+            disposeHeartbeatTask();
             this.config = loadedConfig;
             this.registryClient = registryClient;
             this.loginDecisionService = loginDecisionService;
             this.limboController = nextLimboController;
             this.lastInitializationError = null;
+            startHeartbeatTask(loadedConfig, registryClient);
             return "Sail Gateway reloaded.";
         } catch (IOException | RuntimeException | LinkageError error) {
             this.config = null;
@@ -164,6 +170,7 @@ public final class SailGatewayPlugin {
                 currentLoginService.pendingChallengeCount(),
                 currentLoginService.activeSessionCount(),
                 registryHealth,
+                lastHeartbeatStatus,
                 null);
     }
 
@@ -218,6 +225,36 @@ public final class SailGatewayPlugin {
             return;
         }
         event.setGameProfile(SailGameProfileFactory.fromLocalSession(profile));
+    }
+
+    private void startHeartbeatTask(SailGatewayConfig config, HttpSailRegistryClient client) {
+        String apiKey = config.registry().apiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            return;
+        }
+        this.heartbeatTask = proxyServer.getScheduler()
+                .buildTask(this, () -> {
+                    try {
+                        client.heartbeat(config.server().serverId());
+                        this.lastHeartbeatStatus = Instant.now().toString();
+                    } catch (InterruptedException error) {
+                        Thread.currentThread().interrupt();
+                    } catch (Exception error) {
+                        this.lastHeartbeatStatus = "error: " + error.getMessage();
+                        logger.debug("Sail heartbeat failed", error);
+                    }
+                })
+                .delay(java.time.Duration.ofSeconds(30))
+                .repeat(java.time.Duration.ofMinutes(5))
+                .schedule();
+    }
+
+    private void disposeHeartbeatTask() {
+        com.velocitypowered.api.scheduler.ScheduledTask task = heartbeatTask;
+        if (task != null) {
+            task.cancel();
+            heartbeatTask = null;
+        }
     }
 
     private void disposeLimboController() {

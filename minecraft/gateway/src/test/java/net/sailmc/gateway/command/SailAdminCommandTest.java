@@ -34,6 +34,7 @@ class SailAdminCommandTest {
                         0,
                         0,
                         "ok",
+                        "never",
                         null),
                 () -> "Sail Gateway reloaded.");
 

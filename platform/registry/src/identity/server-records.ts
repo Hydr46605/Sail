@@ -18,6 +18,7 @@ export interface SerializedServerRecord {
   privacy_mode: ServerRecordRow["privacy_mode"];
   status: ServerRecordRow["status"];
   public_listing: boolean;
+  last_heartbeat_at: string | null;
 }
 
 export async function bootstrapDefaultServer(
@@ -82,6 +83,7 @@ export function serializeServerRecord(row: ServerRecordRow): SerializedServerRec
     privacy_mode: row.privacy_mode,
     status: row.status,
     public_listing: row.public_listing,
+    last_heartbeat_at: row.last_heartbeat_at?.toISOString() ?? null,
   };
 }
 

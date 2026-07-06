@@ -8,12 +8,30 @@ interface ServerCardProps {
   onViewApiKey?: () => void;
 }
 
+function heartbeatStatus(lastHeartbeatAt: string | null): { label: string; className: string } {
+  if (!lastHeartbeatAt) {
+    return { label: "No heartbeat", className: "heartbeat-unknown" };
+  }
+  const age = Date.now() - new Date(lastHeartbeatAt).getTime();
+  if (age < 2 * 60 * 1000) {
+    return { label: "Online", className: "heartbeat-online" };
+  }
+  if (age < 10 * 60 * 1000) {
+    return { label: "Stale", className: "heartbeat-stale" };
+  }
+  return { label: "Offline", className: "heartbeat-offline" };
+}
+
 export function ServerCard({ server, onViewApiKey }: ServerCardProps) {
+  const heartbeat = heartbeatStatus(server.last_heartbeat_at);
   return (
     <div className="server-card">
       <div>
         <h4>{server.display_name}</h4>
-        <StatusPill status={server.status} />
+        <div className="server-card-pills">
+          <StatusPill status={server.status} />
+          <span className={`heartbeat-pill ${heartbeat.className}`}>{heartbeat.label}</span>
+        </div>
       </div>
       <div className="server-meta">
         <span>Server ID: {server.server_id}</span>

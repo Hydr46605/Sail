@@ -112,6 +112,7 @@ export interface ServerRecordResponse {
   privacy_mode: ServerPrivacyMode;
   status: "active" | "disabled" | "suspended";
   public_listing: boolean;
+  last_heartbeat_at: string | null;
 }
 
 export interface ConsoleLinkedProvider {

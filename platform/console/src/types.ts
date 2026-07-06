@@ -63,6 +63,7 @@ export interface ConsoleProfileResponse {
     privacy_mode: "minimal" | "standard" | "audit_full";
     status: "active" | "disabled" | "suspended";
     public_listing: boolean;
+    last_heartbeat_at: string | null;
   }>;
 }
 

@@ -25,6 +25,7 @@ class SailStatusRendererTest {
                 2,
                 1,
                 "ok",
+                "never",
                 null);
 
         String output = SailStatusRenderer.render(status);
@@ -43,6 +44,7 @@ class SailStatusRendererTest {
         assertTrue(output.contains("Pending challenges: 2"));
         assertTrue(output.contains("Active sessions: 1"));
         assertTrue(output.contains("Registry health: ok"));
+        assertTrue(output.contains("Last heartbeat: never"));
     }
 
     @Test
@@ -64,6 +66,7 @@ class SailStatusRendererTest {
                 4,
                 1,
                 "ok",
+                "never",
                 null);
 
         String output = SailStatusRenderer.render(status);

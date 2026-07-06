@@ -176,6 +176,7 @@ describe("console app state helpers", () => {
           public_listing: false,
           session_reuse_policy: "same_registry",
           status: "active",
+          last_heartbeat_at: null,
         },
         {
           protocol_version: "sail-protocol-v1",
@@ -188,6 +189,7 @@ describe("console app state helpers", () => {
           public_listing: false,
           session_reuse_policy: "off",
           status: "disabled",
+          last_heartbeat_at: null,
         },
       ],
     };

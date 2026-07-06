@@ -27,6 +27,7 @@ public final class SailStatusRenderer {
                 Pending challenges: %d
                 Active sessions: %d
                 Registry health: %s
+                Last heartbeat: %s
                 """.formatted(
                 status.registryId(),
                 status.registryApiUrl(),
@@ -41,7 +42,8 @@ public final class SailStatusRenderer {
                 status.waitingLimboPlayers(),
                 status.pendingChallenges(),
                 status.activeSessions(),
-                status.registryHealth()).stripTrailing();
+                status.registryHealth(),
+                status.lastHeartbeatStatus()).stripTrailing();
     }
 
     private static String nullToUnknown(String value) {

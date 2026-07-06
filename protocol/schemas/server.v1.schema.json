@@ -60,6 +60,10 @@
     },
     "public_listing": {
       "type": "boolean"
+    },
+    "last_heartbeat_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
     }
   }
 }

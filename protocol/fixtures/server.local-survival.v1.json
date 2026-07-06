@@ -8,5 +8,6 @@
   "session_reuse_policy": "same_registry",
   "privacy_mode": "minimal",
   "status": "active",
-  "public_listing": false
+  "public_listing": false,
+  "last_heartbeat_at": null
 }

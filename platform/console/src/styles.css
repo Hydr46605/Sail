@@ -548,6 +548,61 @@ h2 {
   gap: 4px;
 }
 
+.server-card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.heartbeat-pill {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.heartbeat-online {
+  border: 1px solid #9dceaf;
+  background: var(--console-mint);
+  color: #27683d;
+}
+
+.heartbeat-stale {
+  border: 1px solid #d8c995;
+  background: #fff8df;
+  color: #6f5713;
+}
+
+.heartbeat-offline,
+.heartbeat-unknown {
+  border: 1px solid var(--console-line);
+  background: #edf4f3;
+  color: #445255;
+}
+
+[data-theme="dark"] .heartbeat-online {
+  border-color: #397a4f;
+  background: var(--console-mint);
+  color: #9ad3a8;
+}
+
+[data-theme="dark"] .heartbeat-stale {
+  border-color: #74652b;
+  background: #332f1f;
+  color: #e3d27c;
+}
+
+[data-theme="dark"] .heartbeat-offline,
+[data-theme="dark"] .heartbeat-unknown {
+  border-color: #4d5b66;
+  background: #29313a;
+  color: #c9d3dc;
+}
+
 .server-meta {
   display: flex;
   flex-wrap: wrap;

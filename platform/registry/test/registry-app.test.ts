@@ -217,6 +217,7 @@ describe("Sail registry skeleton", () => {
       privacy_mode: "minimal",
       status: "active",
       public_listing: false,
+      last_heartbeat_at: null,
     });
   });
 

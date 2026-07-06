@@ -187,6 +187,7 @@ describe("Sail Console user flow UI", () => {
         privacy_mode: "minimal",
         status: "active",
         public_listing: false,
+        last_heartbeat_at: null,
       }],
     };
     window.sessionStorage.setItem("sail.console.auth.v1", JSON.stringify({ sessionToken: "test" }));
@@ -211,6 +212,7 @@ describe("Sail Console user flow UI", () => {
       privacy_mode: "minimal" as const,
       status: "active" as const,
       public_listing: false,
+      last_heartbeat_at: null,
     };
     render(<ServerCard server={server} />);
     expect(screen.getByText("Test Server")).toBeDefined();
@@ -257,6 +259,7 @@ describe("Sail Console user flow UI", () => {
           privacy_mode: "standard",
           status: "active",
           public_listing: false,
+          last_heartbeat_at: null,
         },
         {
           protocol_version: "sail-protocol-v1",
@@ -269,6 +272,7 @@ describe("Sail Console user flow UI", () => {
           privacy_mode: "minimal",
           status: "disabled",
           public_listing: false,
+          last_heartbeat_at: null,
         },
       ],
     };

@@ -19,6 +19,7 @@ public record SailGatewayStatus(
         int pendingChallenges,
         int activeSessions,
         String registryHealth,
+        String lastHeartbeatStatus,
         String lastError) {
     public static SailGatewayStatus uninitialized(String lastError) {
         return new SailGatewayStatus(
@@ -38,6 +39,7 @@ public record SailGatewayStatus(
                 0,
                 0,
                 "unknown",
+                "never",
                 lastError);
     }
 }

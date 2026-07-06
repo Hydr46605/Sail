@@ -112,6 +112,7 @@ const serverRecordResponseSchema = Type.Object(
       Type.Literal("suspended"),
     ]),
     public_listing: Type.Boolean(),
+    last_heartbeat_at: Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
   },
   { additionalProperties: false },
 );

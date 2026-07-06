@@ -10,12 +10,13 @@ import {
   SailChallengeError,
   type ChallengeMode,
   type CreateChallengeInput,
+  type NameLookupResponse,
   type OAuthCompletionInput,
   type SessionVerificationInput,
 } from "./identity/challenge-service.js";
 import type { SailRegistryConfig } from "./config.js";
 import type { DiscordOAuthConfig, GitHubOAuthConfig, GoogleOAuthConfig } from "./config.js";
-import { createSailError } from "./identity/challenge-utils.js";
+import { createSailError, normalizeMinecraftName } from "./identity/challenge-utils.js";
 import { loadRegistryConfig } from "./config.js";
 import { registerServer } from "./identity/server-records.js";
 import { consumeApiKeyClaim } from "./identity/api-key-claims.js";
@@ -231,6 +232,39 @@ const heartbeatResponseSchema = Type.Object(
     server_id: Type.String(),
     status: Type.Literal("ok"),
     last_heartbeat_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+
+const nameLookupResponseSchema = Type.Object(
+  {
+    protocol_version: Type.Literal(protocolVersion),
+    canonical_name: Type.String(),
+    display_name: Type.Union([Type.String(), Type.Null()]),
+    status: Type.Union([
+      Type.Literal("claimed"),
+      Type.Literal("unclaimed"),
+      Type.Literal("premium_reserved"),
+    ]),
+    claim_type: Type.Union([
+      Type.Literal("MINECRAFT_VERIFIED"),
+      Type.Literal("SAIL_GLOBAL"),
+      Type.Literal("FEDERATED_TRUSTED"),
+      Type.Literal("LOCAL_SOFT"),
+      Type.Literal("SOCIAL_ONLY"),
+      Type.Null(),
+    ]),
+    identity_type: Type.Union([
+      Type.Literal("MOJANG_PREMIUM"),
+      Type.Literal("SAIL_LOCAL"),
+      Type.Literal("FEDERATED"),
+      Type.Null(),
+    ]),
+    issuer_registry_id: Type.Union([Type.String(), Type.Null()]),
+    minecraft_uuid: Type.Union([Type.String(), Type.Null()]),
+    premium_name: Type.Boolean(),
+    priority: Type.Union([Type.Integer(), Type.Null()]),
+    expires_at: Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
   },
   { additionalProperties: false },
 );
@@ -1007,6 +1041,78 @@ export function buildRegistryApp(
       try {
         await validateServerApiKey(config, request.headers.authorization, request.body.server_id);
         return await challenges.verifySession(request.body);
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post<{
+    Params: { server_id: string };
+    Headers: { authorization?: string };
+  }>(
+    "/v1/servers/:server_id/deregister",
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: "1 minute" },
+      },
+      schema: {
+        params: Type.Object({
+          server_id: Type.String({ minLength: 3, maxLength: 64 }),
+        }),
+        headers: Type.Object({ authorization: Type.Optional(Type.String()) }),
+        response: {
+          200: Type.Object({
+            protocol_version: Type.Literal(protocolVersion),
+            server_id: Type.String(),
+            status: Type.Literal("disabled"),
+          }, { additionalProperties: false }),
+          401: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const token = request.headers.authorization?.startsWith("Bearer ")
+          ? request.headers.authorization.slice("Bearer ".length).trim()
+          : undefined;
+        if (!token) {
+          return reply.code(401).send(createSailError("missing_token", 401, true, "Missing bearer token"));
+        }
+        return await challenges.deregisterServer(token, request.params.server_id);
+      } catch (error) {
+        if (error instanceof SailChallengeError) {
+          return reply.code(error.statusCode).send(error.body);
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.get<{ Params: { name: string } }>(
+    "/v1/names/:name",
+    {
+      config: {
+        rateLimit: { max: 60, timeWindow: "1 minute" },
+      },
+      schema: {
+        params: Type.Object({
+          name: Type.String({ minLength: 3, maxLength: 16, pattern: "^[a-zA-Z0-9_]{3,16}$" }),
+        }),
+        response: {
+          200: nameLookupResponseSchema,
+          400: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const canonicalName = normalizeMinecraftName(request.params.name);
+        return await challenges.lookupName(canonicalName);
       } catch (error) {
         if (error instanceof SailChallengeError) {
           return reply.code(error.statusCode).send(error.body);

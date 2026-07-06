@@ -17,17 +17,18 @@ public record SailGatewayConfig(
         Server server,
         LoginFlow loginFlow,
         Backend backend,
-        Limbo limbo) {
+        Limbo limbo,
+        String registryFailurePolicy) {
     private static final URI LOCAL_REGISTRY_API_URL = URI.create("http://127.0.0.1:8787");
     private static final String LOCAL_REGISTRY_AUTH_URL = "http://127.0.0.1:8787/auth/minecraft?code={code}";
     private static final String LOCAL_REGISTRY_ID = "sail-local";
 
     public SailGatewayConfig(Registry registry, LoginFlow loginFlow, Backend backend) {
-        this("local-dev", registry, defaultServer(), loginFlow, backend, defaultLimbo());
+        this("local-dev", registry, defaultServer(), loginFlow, backend, defaultLimbo(), "fail_closed");
     }
 
     public SailGatewayConfig(Registry registry, Server server, LoginFlow loginFlow, Backend backend) {
-        this("local-dev", registry, server, loginFlow, backend, defaultLimbo());
+        this("local-dev", registry, server, loginFlow, backend, defaultLimbo(), "fail_closed");
     }
 
     public SailGatewayConfig(
@@ -36,7 +37,17 @@ public record SailGatewayConfig(
             Server server,
             LoginFlow loginFlow,
             Backend backend) {
-        this(trustPosture, registry, server, loginFlow, backend, defaultLimbo());
+        this(trustPosture, registry, server, loginFlow, backend, defaultLimbo(), "fail_closed");
+    }
+
+    public SailGatewayConfig(
+            String trustPosture,
+            Registry registry,
+            Server server,
+            LoginFlow loginFlow,
+            Backend backend,
+            Limbo limbo) {
+        this(trustPosture, registry, server, loginFlow, backend, limbo, "fail_closed");
     }
 
     public SailGatewayConfig {
@@ -46,6 +57,7 @@ public record SailGatewayConfig(
         loginFlow = normalizeLoginFlow(loginFlow);
         backend = normalizeBackend(backend, server.serverId());
         limbo = normalizeLimbo(limbo);
+        registryFailurePolicy = normalizeRegistryFailurePolicy(registryFailurePolicy);
         if ("global".equals(trustPosture)
                 && (!registry.publicKeyPinning() || registry.trustedKeys().isEmpty())) {
             throw new IllegalArgumentException(
@@ -65,7 +77,8 @@ public record SailGatewayConfig(
                         true,
                         LOCAL_REGISTRY_AUTH_URL),
                 defaultBackend(server),
-                defaultLimbo());
+                defaultLimbo(),
+                "fail_closed");
     }
 
     public static SailGatewayConfig load(Path path) throws IOException {
@@ -81,7 +94,8 @@ public record SailGatewayConfig(
                 loadServer(sail.node("server"), defaults.server()),
                 loadLoginFlow(sail.node("login-flow"), defaults.loginFlow()),
                 loadBackend(sail.node("backend"), defaults.backend()),
-                loadLimbo(sail.node("limbo"), defaults.limbo()));
+                loadLimbo(sail.node("limbo"), defaults.limbo()),
+                loadRegistryFailurePolicy(sail, defaults.registryFailurePolicy()));
     }
 
     public static void writeDefault(Path path) throws IOException {
@@ -122,6 +136,8 @@ public record SailGatewayConfig(
 
                   limbo:
                     poll-interval-seconds: %d
+
+                  registry-failure-policy: "%s"
                 """.formatted(
                 config.trustPosture(),
                 config.registry().mode(),
@@ -139,7 +155,8 @@ public record SailGatewayConfig(
                 config.backend().requireModernForwarding(),
                 config.backend().failIfForwardingSecretMissing(),
                 config.backend().targetServer(),
-                config.limbo().pollInterval().toSeconds());
+                config.limbo().pollInterval().toSeconds(),
+                config.registryFailurePolicy());
     }
 
     private static Server defaultServer() {
@@ -371,6 +388,21 @@ public record SailGatewayConfig(
                 backend.requireModernForwarding(),
                 backend.failIfForwardingSecretMissing(),
                 targetServer.trim());
+    }
+
+    private static String normalizeRegistryFailurePolicy(String value) {
+        if (value == null) {
+            return "fail_closed";
+        }
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        if ("fail_closed".equals(normalized) || "fail_open".equals(normalized)) {
+            return normalized;
+        }
+        throw new IllegalArgumentException("Unsupported registry-failure-policy: " + value);
+    }
+
+    private static String loadRegistryFailurePolicy(ConfigurationNode sail, String defaultValue) {
+        return sail.node("registry-failure-policy").getString(defaultValue);
     }
 
     private static Limbo normalizeLimbo(Limbo limbo) {

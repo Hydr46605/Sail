@@ -119,3 +119,17 @@ export function formatDateTime(value: string | null): string {
     timeStyle: "short",
   }).format(date);
 }
+
+export function relativeTimeUntil(isoDate: string): string | null {
+  const target = new Date(isoDate);
+  if (Number.isNaN(target.getTime())) return null;
+  const diffMs = target.getTime() - Date.now();
+  if (diffMs <= 0) return "Expired";
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "< 1 min";
+  if (diffMin < 60) return `${diffMin}m left`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h left`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d left`;
+}

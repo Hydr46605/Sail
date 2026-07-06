@@ -109,3 +109,23 @@ export interface ClaimCodeResponse {
   api_key: string;
   server_id: string;
 }
+
+export interface NameLookupResponse {
+  protocol_version: "sail-protocol-v1";
+  canonical_name: string;
+  display_name: string | null;
+  status: "claimed" | "unclaimed" | "premium_reserved";
+  claim_type: "MINECRAFT_VERIFIED" | "SAIL_GLOBAL" | "FEDERATED_TRUSTED" | "LOCAL_SOFT" | "SOCIAL_ONLY" | null;
+  identity_type: "MOJANG_PREMIUM" | "SAIL_LOCAL" | "FEDERATED" | null;
+  issuer_registry_id: string | null;
+  minecraft_uuid: string | null;
+  premium_name: boolean;
+  priority: number | null;
+  expires_at: string | null;
+}
+
+export interface ServerDeregistrationResponse {
+  protocol_version: "sail-protocol-v1";
+  server_id: string;
+  status: "disabled";
+}

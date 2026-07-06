@@ -16,7 +16,9 @@ import {
   type ConsoleProfileResponse,
   type CompletedIdentity,
   type CreateChallengeInput,
+  type NameLookupResponse,
   type OAuthCompletionInput,
+  type ServerDeregistrationResponse,
   type SessionRevocationResponse,
   type ServerRecordResponse,
   type SessionVerificationInput,
@@ -510,6 +512,53 @@ export class InMemoryChallengeService implements ChallengeService {
       throw serverNotFound(serverId);
     }
     // In-memory service has no persistent state to update.
+  }
+
+  async lookupName(canonicalName: string): Promise<NameLookupResponse> {
+    const claim = this.localNameClaims.get(canonicalName);
+    if (claim) {
+      return {
+        protocol_version: "sail-protocol-v1",
+        canonical_name: canonicalName,
+        display_name: claim.displayName,
+        status: "claimed",
+        claim_type: "LOCAL_SOFT",
+        identity_type: "SAIL_LOCAL",
+        issuer_registry_id: this.config.registryId,
+        minecraft_uuid: claim.minecraftUuid,
+        premium_name: false,
+        priority: 10,
+        expires_at: null,
+      };
+    }
+
+    let premium = false;
+    if (this.config.blockPremiumNamesForLocal) {
+      try {
+        const status = await this.premiumNames.lookup(canonicalName);
+        premium = status.premium;
+      } catch {
+        // Fail open for lookup — premium check is best-effort.
+      }
+    }
+
+    return {
+      protocol_version: "sail-protocol-v1",
+      canonical_name: canonicalName,
+      display_name: null,
+      status: premium ? "premium_reserved" : "unclaimed",
+      claim_type: null,
+      identity_type: null,
+      issuer_registry_id: null,
+      minecraft_uuid: null,
+      premium_name: premium,
+      priority: null,
+      expires_at: null,
+    };
+  }
+
+  async deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse> {
+    throw createSailError("unavailable", 503, true, "Server deregistration requires PostgreSQL backend.");
   }
 }
 

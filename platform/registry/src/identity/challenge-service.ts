@@ -185,6 +185,20 @@ export class SailChallengeError extends Error {
   }
 }
 
+export interface NameLookupResponse {
+  protocol_version: "sail-protocol-v1";
+  canonical_name: string;
+  display_name: string | null;
+  status: "claimed" | "unclaimed" | "premium_reserved";
+  claim_type: ServerRecordAllowedClaimType | null;
+  identity_type: "MOJANG_PREMIUM" | "SAIL_LOCAL" | "FEDERATED" | null;
+  issuer_registry_id: string | null;
+  minecraft_uuid: string | null;
+  premium_name: boolean;
+  priority: number | null;
+  expires_at: string | null;
+}
+
 export interface ChallengeServiceDependencies {
   premiumNames?: PremiumNameLookup;
 }
@@ -204,4 +218,12 @@ export interface ChallengeService {
   getSessionByToken(token: string): Promise<{ account_id: string | null; session_id: string } | null>;
   getDatabase(): RegistryDatabase | null;
   recordHeartbeat(serverId: string): Promise<void> | void;
+  lookupName(canonicalName: string): Promise<NameLookupResponse>;
+  deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse>;
+}
+
+export interface ServerDeregistrationResponse {
+  protocol_version: "sail-protocol-v1";
+  server_id: string;
+  status: "disabled";
 }

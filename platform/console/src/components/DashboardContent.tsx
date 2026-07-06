@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Activity, KeyRound, Link2, Server } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
+import { createSailConsoleApiClient } from "../api.js";
 import type { ConsoleProfileResponse } from "../types.js";
 import { countActiveSessions, formatProviderLabel, getOperatorSummary } from "../utils/helpers.js";
 import { Metric } from "./Metric.js";
+import { NameLookup } from "./NameLookup.js";
 import { ServerApiKeyDeliveryModal } from "./ServerApiKeyDeliveryModal.js";
 import { ServerCard } from "./ServerCard.js";
 import { ServerRegistrationForm } from "./ServerRegistrationForm.js";
@@ -86,6 +88,14 @@ export function DashboardContent(props: {
           </div>
           <KeyRound aria-hidden="true" size={20} />
         </div>
+        <NameLookup
+          onClaim={async (name) => {
+            const client = createSailConsoleApiClient();
+            const challenge = await client.createConsoleAuthChallenge({ username: name });
+            window.open(challenge.auth_url, "_blank");
+          }}
+          isClaiming={false}
+        />
         <div className="table-scroll">
           <table className="data-table names-table">
             <thead>

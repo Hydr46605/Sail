@@ -3,9 +3,11 @@ import type {
   ConsoleAuthChallengeInput,
   ConsoleAuthChallengeResponse,
   ConsoleProfileResponse,
+  NameLookupResponse,
   RegisterServerInput,
   RegisterServerResponse,
   SailErrorResponse,
+  ServerDeregistrationResponse,
   SessionRevocationResponse,
 } from "./types.js";
 
@@ -28,6 +30,8 @@ export interface SailConsoleApiClient {
   revokeConsoleSession(sessionToken: string, sessionId: string): Promise<SessionRevocationResponse>;
   registerServer(sessionToken: string, input: RegisterServerInput): Promise<RegisterServerResponse>;
   claimServerApiKey(claimCode: string): Promise<ClaimCodeResponse>;
+  lookupName(name: string): Promise<NameLookupResponse>;
+  deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse>;
 }
 
 export function createSailConsoleApiClient(options: {
@@ -75,6 +79,15 @@ export function createSailConsoleApiClient(options: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ claim_code: claimCode }),
+      });
+    },
+    async lookupName(name: string): Promise<NameLookupResponse> {
+      return requestJson(fetchImpl, `${baseUrl}/v1/names/${encodeURIComponent(name)}`);
+    },
+    async deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse> {
+      return requestJson(fetchImpl, `${baseUrl}/v1/servers/${encodeURIComponent(serverId)}/deregister`, {
+        method: "POST",
+        sessionToken: requireSessionToken(sessionToken),
       });
     },
   };

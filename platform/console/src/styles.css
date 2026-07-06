@@ -603,6 +603,133 @@ h2 {
   color: #c9d3dc;
 }
 
+/* Name Lookup */
+
+.name-lookup {
+  margin-bottom: 0.5rem;
+}
+
+.name-lookup-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.name-lookup-form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--console-line-strong);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--console-text);
+  padding: 8px 12px;
+}
+
+.name-lookup-form input:focus {
+  border-color: var(--console-teal);
+  outline: 3px solid rgba(10, 98, 104, 0.16);
+}
+
+.name-lookup-error {
+  color: var(--console-red);
+  font-size: 0.82rem;
+  margin-top: 0.375rem;
+}
+
+.name-lookup-result {
+  margin-top: 0.75rem;
+  padding: 12px;
+  border: 1px solid var(--console-line);
+  border-radius: 8px;
+  background: var(--console-panel-soft);
+}
+
+.name-lookup-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.375rem;
+}
+
+.name-lookup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.82rem;
+  color: var(--console-muted);
+  margin-bottom: 0.5rem;
+}
+
+.name-lookup-note {
+  font-size: 0.82rem;
+  color: var(--console-muted);
+  margin: 0.375rem 0 0;
+}
+
+.name-status-pill {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.name-status-available {
+  border: 1px solid #9dceaf;
+  background: var(--console-mint);
+  color: #27683d;
+}
+
+.name-status-claimed {
+  border: 1px solid #d8c995;
+  background: #fff8df;
+  color: #6f5713;
+}
+
+.name-status-premium {
+  border: 1px solid #a8c3d5;
+  background: #edf7fb;
+  color: var(--console-teal-strong);
+}
+
+[data-theme="dark"] .name-lookup-form input {
+  border-color: #4a5661;
+  background: #15191d;
+  color: #e7edf2;
+}
+
+[data-theme="dark"] .name-lookup-form input:focus {
+  border-color: #82c8d6;
+  outline-color: #24434b;
+}
+
+[data-theme="dark"] .name-lookup-result {
+  border-color: var(--console-line);
+  background: var(--console-panel-soft);
+}
+
+[data-theme="dark"] .name-status-available {
+  border-color: #397a4f;
+  background: var(--console-mint);
+  color: #9ad3a8;
+}
+
+[data-theme="dark"] .name-status-claimed {
+  border-color: #74652b;
+  background: #332f1f;
+  color: #e3d27c;
+}
+
+[data-theme="dark"] .name-status-premium {
+  border-color: #3e6d82;
+  background: #1d3440;
+  color: #a7d6e9;
+}
+
 .server-meta {
   display: flex;
   flex-wrap: wrap;

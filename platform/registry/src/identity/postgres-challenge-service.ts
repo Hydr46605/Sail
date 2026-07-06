@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { JWTPayload } from "jose";
 import { JWTExpired } from "jose/errors";
-import type { Selectable, Transaction } from "kysely";
+import { sql, type Selectable, type Transaction } from "kysely";
 import type { SailJwk, SailRegistryConfig } from "../config.js";
 import type { RegistryDatabase, RegistryDatabaseSchema } from "../db/schema.js";
 import { createPremiumNameLookup, type PremiumNameLookup } from "../premium-names.js";
@@ -15,7 +15,9 @@ import {
   type ConsoleProfileResponse,
   type CompletedIdentity,
   type CreateChallengeInput,
+  type NameLookupResponse,
   type OAuthCompletionInput,
+  type ServerDeregistrationResponse,
   type SessionRevocationResponse,
   type ServerRecordResponse,
   type SessionVerificationInput,
@@ -931,6 +933,88 @@ export class PostgresChallengeService implements ChallengeService {
     if (!updated) {
       throw serverNotFound(serverId);
     }
+  }
+
+  async deregisterServer(sessionToken: string, serverId: string): Promise<ServerDeregistrationResponse> {
+    const authenticated = await this.authenticateConsoleSession(sessionToken);
+    const result = await this.db
+      .updateTable("servers")
+      .set({ status: "disabled", api_key_jwk_id: null, updated_at: sql`now()` })
+      .where("registry_id", "=", this.config.registryId)
+      .where("server_id", "=", serverId)
+      .where("owner_account_id", "=", authenticated.accountId)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+
+    if (Number(result.numUpdatedRows) === 0) {
+      throw createSailError("server_not_found", 404, false, "Server not found or you do not own it.", { server_id: serverId });
+    }
+
+    return {
+      protocol_version: "sail-protocol-v1",
+      server_id: serverId,
+      status: "disabled",
+    };
+  }
+
+  async lookupName(canonicalName: string): Promise<NameLookupResponse> {
+    const claim = await this.db
+      .selectFrom("name_claims")
+      .innerJoin("minecraft_identities", "minecraft_identities.id", "name_claims.minecraft_identity_id")
+      .select([
+        "name_claims.canonical_name",
+        "name_claims.display_name",
+        "name_claims.claim_type",
+        "name_claims.issuer_registry_id",
+        "name_claims.priority",
+        "name_claims.expires_at",
+        "minecraft_identities.identity_type",
+        "minecraft_identities.minecraft_uuid",
+      ])
+      .where("name_claims.canonical_name", "=", canonicalName)
+      .where("name_claims.issuer_registry_id", "=", this.config.registryId)
+      .where("name_claims.status", "=", "active")
+      .executeTakeFirst();
+
+    if (claim) {
+      return {
+        protocol_version: "sail-protocol-v1",
+        canonical_name: claim.canonical_name,
+        display_name: claim.display_name,
+        status: "claimed",
+        claim_type: claim.claim_type as NameLookupResponse["claim_type"],
+        identity_type: claim.identity_type as NameLookupResponse["identity_type"],
+        issuer_registry_id: claim.issuer_registry_id,
+        minecraft_uuid: claim.minecraft_uuid,
+        premium_name: claim.identity_type === "MOJANG_PREMIUM",
+        priority: claim.priority,
+        expires_at: claim.expires_at?.toISOString() ?? null,
+      };
+    }
+
+    let premium = false;
+    if (this.config.blockPremiumNamesForLocal) {
+      try {
+        const status = await this.premiumNames.lookup(canonicalName);
+        premium = status.premium;
+      } catch {
+        // Fail open for name lookup — premium check is best-effort.
+      }
+    }
+
+    return {
+      protocol_version: "sail-protocol-v1",
+      canonical_name: canonicalName,
+      display_name: null,
+      status: premium ? "premium_reserved" : "unclaimed",
+      claim_type: null,
+      identity_type: null,
+      issuer_registry_id: null,
+      minecraft_uuid: null,
+      premium_name: premium,
+      priority: null,
+      expires_at: null,
+    };
   }
 }
 

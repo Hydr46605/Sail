@@ -1,7 +1,7 @@
 import { Trash2 } from "lucide-react";
 import type { StoredConsoleAuth } from "../auth.js";
 import type { ConsoleSession } from "../utils/config.js";
-import { formatDateTime } from "../utils/helpers.js";
+import { formatDateTime, relativeTimeUntil } from "../utils/helpers.js";
 import { StatusPill } from "./StatusPill.js";
 
 export function SessionRow(props: {
@@ -12,6 +12,7 @@ export function SessionRow(props: {
 }) {
   const isCurrent = props.session.current || props.auth.sessionId === props.session.session_id;
   const canRevoke = props.session.status !== "revoked";
+  const expiresIn = relativeTimeUntil(props.session.expires_at);
 
   return (
     <tr>
@@ -22,7 +23,12 @@ export function SessionRow(props: {
         </span>
       </th>
       <td><StatusPill status={props.session.status} /></td>
-      <td>{formatDateTime(props.session.expires_at)}</td>
+      <td>
+        <span className="session-expires">
+          {formatDateTime(props.session.expires_at)}
+          {expiresIn && <small>{expiresIn}</small>}
+        </span>
+      </td>
       <td>{isCurrent ? <span className="current-pill">Current</span> : "-"}</td>
       <td>
         <button

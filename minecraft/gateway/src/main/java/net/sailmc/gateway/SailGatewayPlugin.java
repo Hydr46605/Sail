@@ -213,8 +213,13 @@ public final class SailGatewayPlugin {
                     Component.text(KickMessageRenderer.registryUnavailable())));
         } catch (IOException | RuntimeException error) {
             logger.warn("Sail registry challenge failed for {}", event.getUsername(), error);
-            event.setResult(PreLoginEvent.PreLoginComponentResult.denied(
-                    Component.text(KickMessageRenderer.registryUnavailable())));
+            if ("fail_open".equals(config.registryFailurePolicy())) {
+                logger.info("Registry unavailable, fail-open policy allows {} through", event.getUsername());
+                event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
+            } else {
+                event.setResult(PreLoginEvent.PreLoginComponentResult.denied(
+                        Component.text(KickMessageRenderer.registryUnavailable())));
+            }
         }
     }
 

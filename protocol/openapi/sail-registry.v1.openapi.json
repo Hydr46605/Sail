@@ -4,7 +4,7 @@
     "title": "Sail Registry API",
     "version": "sail-protocol-v1",
     "summary": "Baseline registry API for Sail self-hosted MVP and future federation.",
-    "description": "Sail Registry API v1 defines discovery, registered server records, Minecraft auth challenges, session verification, and console profile/session management for the current self-hosted registry surface. Federation, public name lookup, and signed claim verification are deferred surfaces."
+    "description": "Sail Registry API v1 defines discovery, registered server records, Minecraft auth challenges, session verification, public name lookup, server lifecycle management, and console profile/session management for the current self-hosted registry surface. Federation and signed claim verification are deferred surfaces."
   },
   "servers": [
     {
@@ -31,6 +31,9 @@
     },
     {
       "name": "Console"
+    },
+    {
+      "name": "Names"
     },
     {
       "name": "Federation"
@@ -341,6 +344,103 @@
           },
           "404": {
             "description": "Server is not registered with this registry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/names/{name}": {
+      "get": {
+        "tags": ["Names"],
+        "operationId": "lookupName",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 16,
+              "pattern": "^[a-zA-Z0-9_]{3,16}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Name lookup result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/name-lookup.v1.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/servers/{server_id}/deregister": {
+      "post": {
+        "tags": ["Servers"],
+        "operationId": "deregisterServer",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server deregistered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["protocol_version", "server_id", "status"],
+                  "properties": {
+                    "protocol_version": {
+                      "const": "sail-protocol-v1"
+                    },
+                    "server_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "disabled"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/error.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Server not found or not owned by caller.",
             "content": {
               "application/json": {
                 "schema": {

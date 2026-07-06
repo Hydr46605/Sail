@@ -16,10 +16,12 @@ const currentServedRoutes = [
   "/v1/minecraft/auth-challenges/{challenge_id}",
   "/v1/minecraft/auth-challenges/{challenge_id}/oauth-completions",
   "/v1/minecraft/sessions/verify",
+  "/v1/names/{name}",
   "/v1/servers",
   "/v1/servers/claim",
   "/v1/servers/heartbeat",
   "/v1/servers/{server_id}",
+  "/v1/servers/{server_id}/deregister",
 ];
 
 const errors = [];

@@ -17,6 +17,7 @@ import { useServerRegistration } from "../hooks/useServerRegistration.js";
 
 export function DashboardContent(props: {
   auth: StoredConsoleAuth;
+  registryUrl: string;
   profile: ConsoleProfileResponse;
   revokingSessionId: string | undefined;
   isRevoking: boolean;
@@ -94,8 +95,9 @@ export function DashboardContent(props: {
           <KeyRound aria-hidden="true" size={20} />
         </div>
         <NameLookup
+          registryUrl={props.registryUrl}
           onClaim={async (name) => {
-            const client = createSailConsoleApiClient();
+            const client = createSailConsoleApiClient({ baseUrl: props.registryUrl });
             const challenge = await client.createConsoleAuthChallenge({ username: name });
             window.open(challenge.auth_url, "_blank");
           }}
@@ -241,7 +243,7 @@ export function DashboardContent(props: {
           </div>
           <ShieldCheck aria-hidden="true" size={20} />
         </div>
-        <SigningKeys sessionToken={props.auth.sessionToken} />
+        <SigningKeys sessionToken={props.auth.sessionToken} registryUrl={props.registryUrl} />
       </section>
 
       <section className="console-section" aria-labelledby="audit-heading">
@@ -252,7 +254,7 @@ export function DashboardContent(props: {
           </div>
           <History aria-hidden="true" size={20} />
         </div>
-        <AuditLog sessionToken={props.auth.sessionToken} />
+        <AuditLog sessionToken={props.auth.sessionToken} registryUrl={props.registryUrl} />
       </section>
     </>
   );

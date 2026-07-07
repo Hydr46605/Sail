@@ -10,14 +10,14 @@ const severityClass: Record<AuditEvent["severity"], string> = {
   critical: "audit-severity-critical",
 };
 
-export function AuditLog(props: { sessionToken: string }) {
+export function AuditLog(props: { sessionToken: string; registryUrl: string }) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
-    const client = createSailConsoleApiClient();
+    const client = createSailConsoleApiClient({ baseUrl: props.registryUrl });
     client.getAuditEvents(props.sessionToken, 100)
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch((err) => {

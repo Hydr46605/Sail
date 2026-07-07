@@ -179,6 +179,7 @@ export function ConsoleHomeRoute() {
         auth={auth}
         registryUrl={effectiveRegistryUrl}
         profile={profileQuery.data}
+        effectiveRegistryUrl={effectiveRegistryUrl}
         profileError={profileQuery.error}
         revokeError={revokeMutation.error}
         revokingSessionId={revokeMutation.variables}

@@ -4,6 +4,7 @@ import { createSailConsoleApiClient } from "../api.js";
 import type { NameLookupResponse } from "../types.js";
 
 export function NameLookup(props: {
+  registryUrl: string;
   onClaim: (name: string) => void;
   isClaiming: boolean;
 }) {
@@ -22,7 +23,7 @@ export function NameLookup(props: {
     setResult(null);
 
     try {
-      const client = createSailConsoleApiClient();
+      const client = createSailConsoleApiClient({ baseUrl: props.registryUrl });
       const lookupResult = await client.lookupName(name);
       setResult(lookupResult);
     } catch (err) {

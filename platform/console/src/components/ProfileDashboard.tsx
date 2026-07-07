@@ -9,6 +9,7 @@ import { ThemeSwitch } from "./ThemeSwitch.js";
 export function ProfileDashboard(props: {
   auth: StoredConsoleAuth;
   registryUrl: string;
+  effectiveRegistryUrl: string;
   profile: ConsoleProfileResponse | undefined;
   profileError: unknown;
   revokeError: unknown;
@@ -81,6 +82,7 @@ export function ProfileDashboard(props: {
       ) : props.profile ? (
         <DashboardContent
           auth={props.auth}
+          registryUrl={props.effectiveRegistryUrl}
           profile={props.profile}
           revokingSessionId={props.revokingSessionId}
           isRevoking={props.isRevoking}

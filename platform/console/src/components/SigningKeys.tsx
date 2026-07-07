@@ -12,7 +12,7 @@ const statusClass: Record<string, string> = {
   revoked: "status-revoked",
 };
 
-export function SigningKeys(props: { sessionToken: string }) {
+export function SigningKeys(props: { sessionToken: string; registryUrl: string }) {
   const [keys, setKeys] = useState<SigningKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function SigningKeys(props: { sessionToken: string }) {
   const [confirmKid, setConfirmKid] = useState<string | null>(null);
 
   const fetchKeys = () => {
-    const client = createSailConsoleApiClient();
+    const client = createSailConsoleApiClient({ baseUrl: props.registryUrl });
     client.getSigningKeys(props.sessionToken)
       .then((data) => setKeys(Array.isArray(data) ? data : []))
       .catch((err) => {
@@ -40,7 +40,7 @@ export function SigningKeys(props: { sessionToken: string }) {
   const handleRevoke = async (kid: string) => {
     setRevokingKid(kid);
     try {
-      const client = createSailConsoleApiClient();
+      const client = createSailConsoleApiClient({ baseUrl: props.registryUrl });
       await client.revokeSigningKey(props.sessionToken, kid);
       fetchKeys();
     } catch (err) {
